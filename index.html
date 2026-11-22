@@ -5,19 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>おトク支払いナビ（プロトタイプ）</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#f6f4ef; --card:#ffffff; --ink:#1f2a2e; --muted:#6b7478; --line:#e4e0d6;
     --accent:#0f766e; --accent-soft:#e3f2ef; --gold:#b7791f; --gold-soft:#fbf1dc;
-    --warn:#9a3412; --warn-soft:#fdeee6; --radius:14px;
+    --warn:#9a3412; --warn-soft:#fdeee6; --radius:18px;
   }
   @media (prefers-color-scheme: dark){
     :root{ --bg:#14191b; --card:#1d2427; --ink:#e8ecec; --muted:#9aa5a8; --line:#2d3639;
       --accent:#4fd1c0; --accent-soft:#16302d; --gold:#f2c46b; --gold-soft:#332a17; --warn:#f6a77f; --warn-soft:#3a2219; }
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans JP",system-ui,sans-serif;font-size:15px;line-height:1.6}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Hiragino Maru Gothic Pro",system-ui,sans-serif;font-size:15px;line-height:1.6}
   .wrap{max-width:640px;margin:0 auto;padding:16px 16px 96px}
   header h1{font-size:20px;margin:4px 0 2px;letter-spacing:.02em}
   header p{margin:0;color:var(--muted);font-size:13px}
@@ -27,7 +27,7 @@
   @media (prefers-color-scheme: dark){ nav.tabs button.on{color:#0b1416} }
   .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:12px}
   .row{display:flex;gap:8px;align-items:center}
-  input[type=text],input[type=number]{width:100%;font:inherit;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
+  input[type=text],input[type=number]{width:100%;font:inherit;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink)}
   input:focus{outline:2px solid var(--accent);outline-offset:1px}
   .amount{width:120px!important;text-align:right}
   .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
