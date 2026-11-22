@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>おトク支払いナビ（プロトタイプ）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f6f4ef; --card:#ffffff; --ink:#1f2a2e; --muted:#6b7478; --line:#e4e0d6;
+    --accent:#0f766e; --accent-soft:#e3f2ef; --gold:#b7791f; --gold-soft:#fbf1dc;
+    --warn:#9a3412; --warn-soft:#fdeee6; --radius:14px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#14191b; --card:#1d2427; --ink:#e8ecec; --muted:#9aa5a8; --line:#2d3639;
+      --accent:#4fd1c0; --accent-soft:#16302d; --gold:#f2c46b; --gold-soft:#332a17; --warn:#f6a77f; --warn-soft:#3a2219; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans JP",system-ui,sans-serif;font-size:15px;line-height:1.6}
+  .wrap{max-width:640px;margin:0 auto;padding:16px 16px 96px}
+  header h1{font-size:20px;margin:4px 0 2px;letter-spacing:.02em}
+  header p{margin:0;color:var(--muted);font-size:13px}
+  nav.tabs{display:flex;gap:6px;margin:16px 0;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px}
+  nav.tabs button{flex:1;border:0;background:transparent;color:var(--muted);padding:9px 6px;border-radius:999px;font:inherit;font-size:14px;font-weight:500;cursor:pointer}
+  nav.tabs button.on{background:var(--accent);color:#fff}
+  @media (prefers-color-scheme: dark){ nav.tabs button.on{color:#0b1416} }
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:12px}
+  .row{display:flex;gap:8px;align-items:center}
+  input[type=text],input[type=number]{width:100%;font:inherit;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
+  input:focus{outline:2px solid var(--accent);outline-offset:1px}
+  .amount{width:120px!important;text-align:right}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .chip{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:5px 11px;font:inherit;font-size:13px;cursor:pointer}
+  .chip:hover{border-color:var(--accent)}
+  .label{font-size:12px;color:var(--muted);margin:0 0 6px}
+  h2{font-size:16px;margin:0 0 10px}
+  .store-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px}
+  .store-head h2{margin:0}
+  .cat{font-size:12px;color:var(--muted)}
+  .rank{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:start;padding:12px 0;border-top:1px solid var(--line)}
+  .rank:first-of-type{border-top:0}
+  .num{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:700;background:var(--bg);color:var(--muted)}
+  .rank.top .num{background:var(--gold);color:#fff}
+  .mname{font-weight:700}
+  .mkind{font-size:12px;color:var(--muted)}
+  .rate{text-align:right}
+  .rate b{font-size:20px;color:var(--accent)}
+  .rank.top .rate b{color:var(--gold)}
+  .pts{font-size:12px;color:var(--muted)}
+  .bd{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+  .bd span{font-size:11.5px;padding:2px 8px;border-radius:6px;background:var(--bg);color:var(--muted)}
+  .bd span.boost{background:var(--accent-soft);color:var(--accent)}
+  .bd span.pc{background:var(--gold-soft);color:var(--gold)}
+  .note{font-size:12.5px;color:var(--muted);margin-top:6px}
+  .note a{color:var(--accent)}
+  .banner{font-size:13px;border-radius:10px;padding:10px 12px;margin-bottom:12px;background:var(--warn-soft);color:var(--warn)}
+  .info{background:var(--accent-soft);color:var(--accent)}
+  .method{display:flex;gap:10px;align-items:flex-start;padding:11px 0;border-top:1px solid var(--line)}
+  .method:first-child{border-top:0}
+  .method input[type=checkbox]{width:20px;height:20px;margin-top:3px;accent-color:var(--accent);flex:none}
+  .method .grow{flex:1;min-width:0}
+  .method .ov{width:84px;padding:6px 8px;font-size:14px;text-align:right}
+  .group-title{font-size:12px;font-weight:700;color:var(--muted);margin:14px 0 4px;letter-spacing:.05em}
+  .btn{border:0;background:var(--accent);color:#fff;font:inherit;font-weight:500;padding:10px 16px;border-radius:10px;cursor:pointer}
+  @media (prefers-color-scheme: dark){ .btn{color:#0b1416} }
+  .btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+  .fav-store{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:1px solid var(--line);gap:10px}
+  .fav-store:first-child{border-top:0}
+  .fav-best{font-size:13px;color:var(--muted)}
+  .fav-best b{color:var(--gold)}
+  .x{border:0;background:transparent;color:var(--muted);font-size:18px;cursor:pointer;padding:4px 8px}
+  .empty{color:var(--muted);text-align:center;padding:18px 0;font-size:14px}
+  footer{font-size:12px;color:var(--muted);margin-top:20px}
+  footer a{color:var(--muted)}
+  .hidden{display:none}
+  details summary{cursor:pointer;color:var(--accent);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>おトク支払いナビ</h1>
+    <p>お店の名前を入れると、あなたの支払い方法の中で一番ポイントが貯まるものを教えます。</p>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button data-tab="search" class="on">店名で調べる</button>
+    <button data-tab="fav">よく行くお店</button>
+    <button data-tab="methods">支払い方法</button>
+  </nav>
+
+  <!-- 店名検索 -->
+  <section id="tab-search">
+    <div class="card">
+      <p class="label">お店の名前</p>
+      <div class="row">
+        <input id="q" type="text" placeholder="例：セブン、マック、スタバ" autocomplete="off">
+      </div>
+      <div class="row" style="margin-top:10px">
+        <span class="label" style="margin:0;flex:1">お会計の金額（ポイント数の目安を出します）</span>
+        <input id="amt" class="amount" type="number" min="0" step="100" value="1000"><span>円</span>
+      </div>
+      <div class="chips" id="quick"></div>
+    </div>
+    <div id="result"></div>
+  </section>
+
+  <!-- よく行くお店 -->
+  <section id="tab-fav" class="hidden">
+    <div class="card">
+      <h2>よく行くお店</h2>
+      <p class="note" style="margin-top:-4px">登録しておくと、お店ごとのベストな支払い方法がひと目でわかります。</p>
+      <div class="row" style="margin-top:10px">
+        <input id="favq" type="text" placeholder="お店の名前を入れて追加" list="storelist" autocomplete="off">
+        <button class="btn" id="favadd">追加</button>
+      </div>
+      <datalist id="storelist"></datalist>
+    </div>
+    <div class="card" id="favlist"></div>
+  </section>
+
+  <!-- 支払い方法 -->
+  <section id="tab-methods" class="hidden">
+    <div class="banner info">ふだん使っている支払い方法にチェックを入れてください。還元率は会員ランクや条件で変わるので、自分の実際の還元率に書き換えられます。<br>※ カード番号などは入力しません。この端末のブラウザにだけ保存されます。</div>
+    <div class="card" id="methodlist"></div>
+    <div class="card">
+      <h2>ポイントカード</h2>
+      <p class="note" style="margin-top:-4px">お会計のときに提示しているポイントカード。提示分（目安0.5%）を上乗せして計算します。</p>
+      <div id="pclist"></div>
+    </div>
+  </section>
+
+  <footer>
+    還元率は2026年11月時点で公式サイト等を確認した目安です。対象店舗・条件・上限・キャンペーンは頻繁に変わるため、実際の還元は各社の公式情報でご確認ください。<br>
+    プロトタイプ版（データは主要チェーン約20店・決済13種のサンプル）
+  </footer>
+</div>
+
+<script>
+/* ============ データ ============ */
+const CHECKED = "2026年11月確認";
+
+const METHODS = [
+  {id:"smbc_nl", name:"三井住友カード(NL)", kind:"クレカ（スマホのタッチ決済）", group:"クレジットカード", base:0.5, point:"Vポイント",
+   note:"7%還元はスマホのVisa/Mastercardタッチ決済のみ。カード現物のタッチ・iD・差し込みは対象外。",
+   src:"https://www.smbc-card.com/camp/article_numberless/index_a.jsp"},
+  {id:"rakuten_card", name:"楽天カード", kind:"クレカ", group:"クレジットカード", base:1.0, point:"楽天ポイント", src:"https://www.rakuten-card.co.jp/"},
+  {id:"jcb_w", name:"JCB CARD W", kind:"クレカ", group:"クレジットカード", base:1.0, point:"J-POINT",
+   note:"パートナー店で倍率アップ。ポイントの交換先によって価値が目減りすることがあります。", src:"https://www.jcb.co.jp/"},
+  {id:"seven_plus", name:"セブンカード・プラス", kind:"クレカ", group:"クレジットカード", base:0.5, point:"nanacoポイント", src:"https://www.7card.co.jp/"},
+  {id:"dcard", name:"dカード", kind:"クレカ", group:"クレジットカード", base:1.0, point:"dポイント", src:"https://dcard.docomo.ne.jp/"},
+  {id:"paypay_card", name:"PayPayカード（カード払い）", kind:"クレカ", group:"クレジットカード", base:1.0, point:"PayPayポイント",
+   note:"2026年6月2日以降、PayPayアプリに登録していないカードはポイント付与対象外。", src:"https://paypay.ne.jp/guide/paypay-card/"},
+  {id:"aeon_card", name:"イオンカード", kind:"クレカ", group:"クレジットカード", base:0.5, point:"WAON POINT", src:"https://www.aeon.co.jp/"},
+  {id:"paypay", name:"PayPay（残高払い）", kind:"QR決済", group:"QR・スマホ決済", base:0.5, point:"PayPayポイント", src:"https://paypay.ne.jp/event/paypaystep/"},
+  {id:"paypay_credit", name:"PayPay（クレジット払い）", kind:"QR決済", group:"QR・スマホ決済", base:1.0, point:"PayPayポイント",
+   note:"PayPayステップ達成（前月30回以上かつ10万円以上）で最大1.5%。本人確認が必要。", src:"https://paypay.ne.jp/event/paypaystep/"},
+  {id:"rakuten_pay", name:"楽天ペイ（楽天キャッシュ払い）", kind:"QR決済", group:"QR・スマホ決済", base:1.5, point:"楽天ポイント",
+   note:"楽天カードからチャージ＋楽天ポイントカードを月2回以上提示が条件。未達成だと1.0%。", src:"https://pay.rakuten.co.jp/topics/pointprogram/"},
+  {id:"dbarai", name:"d払い", kind:"QR決済", group:"QR・スマホ決済", base:0.5, point:"dポイント",
+   note:"ランクやdカード設定で上乗せあり。2026年9月から特典の月上限は一律200pt。", src:"https://service.smt.docomo.ne.jp/keitai_payment/topics/dcard/"},
+  {id:"aupay", name:"au PAY（コード支払い）", kind:"QR決済", group:"QR・スマホ決済", base:0.5, point:"Pontaポイント",
+   note:"Pontaパス会員はローソンなど対象店で利用回数に応じて上乗せ。", src:"https://www.au.com/"},
+  {id:"aeon_pay", name:"AEON Pay", kind:"QR決済", group:"QR・スマホ決済", base:1.5, point:"WAON POINT",
+   note:"2026年10月20日〜の特典。月2万円までの利用分が対象、予告なく終了の可能性あり。", src:"https://www.aeon.com/aeonapp/campaign/202611_ap1-5/"},
+  {id:"cash", name:"現金", kind:"現金", group:"その他", base:0, point:"—"},
+];
+
+const POINT_CARDS = [
+  {id:"d", name:"dポイントカード"},
+  {id:"rakuten", name:"楽天ポイントカード"},
+  {id:"ponta", name:"Pontaカード"},
+];
+const PC_RATE = 0.5;
+
+// SMBC(NL) スマホタッチ7%の対象（代表例）
+const SMBC7 = ["seven","lawson","famima","mcd","sukiya","gusto","saizeriya","doutor","kfc","mos"];
+
+const STORES = [
+  {id:"seven", name:"セブン-イレブン", cat:"コンビニ", alias:["セブン","セブンイレブン","セブイレ","7-11","7イレブン","seven"], pc:[]},
+  {id:"lawson", name:"ローソン", cat:"コンビニ", alias:["lawson","ろーそん"], pc:["d","ponta"]},
+  {id:"famima", name:"ファミリーマート", cat:"コンビニ", alias:["ファミマ","famima","ふぁみま"], pc:["d","rakuten"]},
+  {id:"mcd", name:"マクドナルド", cat:"飲食", alias:["マック","マクド","mcdonalds","まっく"], pc:["d","rakuten"]},
+  {id:"sukiya", name:"すき家", cat:"飲食", alias:["すきや","スキヤ"], pc:["rakuten"]},
+  {id:"gusto", name:"ガスト", cat:"飲食", alias:["がすと"], pc:["rakuten"]},
+  {id:"saizeriya", name:"サイゼリヤ", cat:"飲食", alias:["サイゼ","サイゼリア","さいぜ"], pc:[]},
+  {id:"doutor", name:"ドトール", cat:"カフェ", alias:["ドトールコーヒー","どとーる"], pc:[]},
+  {id:"kfc", name:"ケンタッキーフライドチキン", cat:"飲食", alias:["ケンタッキー","ケンタ","kfc"], pc:["rakuten","ponta"]},
+  {id:"mos", name:"モスバーガー", cat:"飲食", alias:["モス","もす"], pc:[]},
+  {id:"starbucks", name:"スターバックス", cat:"カフェ", alias:["スタバ","スターバックスコーヒー","starbucks","すたば"], pc:[]},
+  {id:"aeon", name:"イオン", cat:"スーパー", alias:["イオンモール","イオンスタイル","aeon","マックスバリュ","いおん"], pc:[]},
+  {id:"matsukiyo", name:"マツモトキヨシ", cat:"ドラッグストア", alias:["マツキヨ","まつきよ"], pc:["d"]},
+  {id:"tsuruha", name:"ツルハドラッグ", cat:"ドラッグストア", alias:["ツルハ","つるは"], pc:["rakuten"]},
+  {id:"welcia", name:"ウェルシア", cat:"ドラッグストア", alias:["うぇるしあ"], pc:[]},
+  {id:"bic", name:"ビックカメラ", cat:"家電", alias:["ビック","びっくかめら"], pc:[]},
+  {id:"amazon", name:"Amazon", cat:"ネット通販", alias:["アマゾン","amazon","あまぞん"], pc:[]},
+  {id:"rakuten_ichiba", name:"楽天市場", cat:"ネット通販", alias:["楽天","らくてん"], pc:[]},
+  {id:"yahoo", name:"Yahoo!ショッピング", cat:"ネット通販", alias:["ヤフショ","ヤフー","yahoo"], pc:[]},
+];
+
+// 店舗ごとの特典（rate = その店での合計還元率）
+const RULES = [
+  ...SMBC7.map(s => ({m:"smbc_nl", s, rate:7.0, label:"対象店でスマホタッチ7%",
+     note: s==="seven" ? "セブン-イレブンアプリ提示などの条件で最大10%。" : "商業施設内の店舗など一部対象外あり。"})),
+  {m:"seven_plus", s:"seven", rate:10.0, label:"セブンで最大10%", note:"7iDにカード登録が必要。引落口座をセブン銀行にすると+1%。"},
+  {m:"jcb_w", s:"seven", rate:1.5, label:"パートナー店"},
+  {m:"jcb_w", s:"starbucks", rate:10.5, label:"スタバカード入金で最大10.5%", note:"スターバックスカードへのオンライン入金が対象。店頭でのカード払いとは別。"},
+  {m:"jcb_w", s:"amazon", rate:2.0, label:"パートナー店"},
+  {m:"aeon_card", s:"aeon", rate:1.0, label:"イオングループでいつでも2倍", note:"毎月10日（ありが10デー）は5倍、20日・30日は5%オフなど特定日あり。"},
+  {m:"aeon_pay", s:"aeon", rate:1.5, label:"イオングループ", note:"毎月10日はAEON Payデーで基本の10倍。"},
+  {m:"rakuten_card", s:"rakuten_ichiba", rate:3.0, label:"SPUで3%〜", note:"楽天市場のSPU（会員条件で変動）。"},
+  {m:"paypay_card", s:"yahoo", rate:5.0, label:"毎日最大5%", note:"LINE連携など条件あり。"},
+  {m:"paypay_credit", s:"yahoo", rate:5.0, label:"毎日最大5%", note:"LINE連携など条件あり。"},
+  {m:"aupay", s:"lawson", rate:0.5, label:"Pontaパスで上乗せ", note:"Pontaパス会員はローソンで利用回数に応じて還元率アップ（期間限定で最大10%の月も）。"},
+  {m:"dcard", s:"lawson", rate:1.0, label:"dカード特約店", note:"dポイントカード提示と合わせて最大2%程度。"},
+  {m:"rakuten_pay", s:"famima", rate:1.5, label:"ダブルで貯まる対象店"},
+  {m:"rakuten_pay", s:"sukiya", rate:1.5, label:"ダブルで貯まる対象店"},
+  {m:"rakuten_pay", s:"gusto", rate:1.5, label:"ダブルで貯まる対象店"},
+  {m:"rakuten_pay", s:"tsuruha", rate:1.5, label:"ダブルで貯まる対象店"},
+  {m:"rakuten_pay", s:"kfc", rate:1.5, label:"ダブルで貯まる対象店"},
+];
+
+// ネット通販ではQR・タッチ決済が使えないものを除外
+const NOT_AVAILABLE = {
+  amazon:["paypay","paypay_credit","rakuten_pay","dbarai","aupay","aeon_pay","cash"],
+  rakuten_ichiba:["paypay","paypay_credit","dbarai","aupay","aeon_pay","cash"],
+  yahoo:["rakuten_pay","dbarai","aupay","aeon_pay","cash"],
+};
+
+/* ============ 保存 ============ */
+const KEY = "otoku-pay-v1";
+let state = {methods:[], overrides:{}, pcs:[], favs:[]};
+try { const s = JSON.parse(localStorage.getItem(KEY)); if (s) state = Object.assign(state, s); } catch(e){}
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){} }
+
+/* ============ 検索 ============ */
+function norm(s){
+  return (s||"").toLowerCase()
+    .replace(/[ぁ-ゖ]/g, c => String.fromCharCode(c.charCodeAt(0)+0x60)) // ひらがな→カタカナ
+    .replace(/[\s\-ー・!！'’]/g,"");
+}
+function findStore(q){
+  const n = norm(q); if (!n) return null;
+  let best=null, score=0;
+  for (const st of STORES){
+    for (const k of [st.name, ...st.alias]){
+      const nk = norm(k);
+      let sc = 0;
+      if (nk===n) sc=100;
+      else if (nk.startsWith(n)) sc=60 + n.length;
+      else if (nk.includes(n)) sc=40 + n.length;
+      else if (n.includes(nk) && nk.length>=2) sc=30 + nk.length;
+      if (sc>score){score=sc;best=st;}
+    }
+  }
+  return best;
+}
+
+/* ============ 計算 ============ */
+const fmt = r => (Math.round(r*10)/10).toFixed(1);
+function activeMethods(){
+  return state.methods.length ? METHODS.filter(m=>state.methods.includes(m.id)) : METHODS.filter(m=>m.id!=="cash");
+}
+function baseOf(m){ const o = state.overrides[m.id]; return (o!==undefined && o!=="" && !isNaN(o)) ? Number(o) : m.base; }
+
+function rank(store){
+  const list = [];
+  for (const m of activeMethods()){
+    if (store && NOT_AVAILABLE[store.id] && NOT_AVAILABLE[store.id].includes(m.id)) continue;
+    const base = baseOf(m);
+    let rate = base, parts = [{t:`基本 ${fmt(base)}%`}], notes = [];
+    const rule = store && RULES.find(r=>r.m===m.id && r.s===store.id);
+    if (rule){
+      if (rule.rate > base){ parts = [{t:`${rule.label} ${fmt(rule.rate)}%`, cls:"boost"}]; rate = rule.rate; }
+      else parts.push({t:rule.label, cls:"boost"});
+      if (rule.note) notes.push(rule.note);
+    }
+    if (m.note) notes.push(m.note);
+    // ポイントカード提示（ネット通販以外）
+    let pcAdd = 0;
+    if (store && store.pc.length){
+      const usable = store.pc.filter(p=>state.pcs.includes(p));
+      if (usable.length){ pcAdd = PC_RATE; }
+    }
+    if (pcAdd){
+      const names = store.pc.filter(p=>state.pcs.includes(p)).map(p=>POINT_CARDS.find(x=>x.id===p).name.replace("カード",""));
+      parts.push({t:`${names[0]}提示 +${fmt(pcAdd)}%`, cls:"pc"});
+    }
+    list.push({m, rate: rate + pcAdd, parts, notes});
+  }
+  list.sort((a,b)=>b.rate-a.rate || a.m.name.localeCompare(b.m.name,"ja"));
+  return list;
+}
+
+/* ============ 描画 ============ */
+const $ = s => document.querySelector(s);
+function esc(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+function renderRanking(store, rawQuery){
+  const amt = Math.max(0, Number($("#amt").value)||0);
+  const ranking = rank(store);
+  let html = "";
+  if (!state.methods.length){
+    html += `<div class="banner info">支払い方法がまだ登録されていないので、すべての支払い方法で比べています。「支払い方法」タブで自分のものを選ぶと、あなた専用のランキングになります。</div>`;
+  }
+  if (!store){
+    html += `<div class="banner">「${esc(rawQuery)}」のデータはまだありません。お店ごとの特典が入っていないので、<b>基本還元率</b>だけで比べています。</div>`;
+  }
+  html += `<div class="card">`;
+  if (store){
+    html += `<div class="store-head"><h2>${esc(store.name)}</h2><span class="cat">${esc(store.cat)}</span></div>`;
+  } else {
+    html += `<div class="store-head"><h2>基本還元率ランキング</h2></div>`;
+  }
+  if (!ranking.length){ html += `<div class="empty">このお店で使える支払い方法が登録されていません。</div>`; }
+  ranking.forEach((r,i)=>{
+    const pts = Math.floor(amt * r.rate / 100);
+    const top = i===0 && r.rate>0;
+    html += `<div class="rank ${top?"top":""}">
+      <div class="num">${i+1}</div>
+      <div>
+        <div class="mname">${esc(r.m.name)}</div>
+        <div class="mkind">${esc(r.m.kind)}・${esc(r.m.point)}</div>
+        <div class="bd">${r.parts.map(p=>`<span class="${p.cls||""}">${esc(p.t)}</span>`).join("")}</div>
+        ${r.notes.length || r.m.src ? `<details class="note"><summary>条件・出典</summary>${r.notes.map(n=>`<div>・${esc(n)}</div>`).join("")}${r.m.src?`<div>出典：<a href="${r.m.src}" target="_blank" rel="noopener">公式サイト</a>（${CHECKED}）</div>`:""}</details>` : ""}
+      </div>
+      <div class="rate"><b>${fmt(r.rate)}%</b><div class="pts">${amt?`約${pts.toLocaleString()}pt`:""}</div></div>
+    </div>`;
+  });
+  html += `</div>`;
+  $("#result").innerHTML = html;
+}
+
+function doSearch(){
+  const q = $("#q").value.trim();
+  if (!q){ $("#result").innerHTML = `<div class="empty">お店の名前を入れるか、下のよく使うお店を選んでください。</div>`; return; }
+  renderRanking(findStore(q), q);
+}
+
+function renderQuick(){
+  const ids = state.favs.length ? state.favs : ["seven","lawson","famima","mcd","starbucks","aeon"];
+  $("#quick").innerHTML = ids.map(id=>STORES.find(s=>s.id===id)).filter(Boolean)
+    .map(s=>`<button class="chip" data-q="${esc(s.name)}">${esc(s.name)}</button>`).join("");
+}
+
+function renderMethods(){
+  const groups = [...new Set(METHODS.map(m=>m.group))];
+  let html = "";
+  for (const g of groups){
+    html += `<div class="group-title">${esc(g)}</div>`;
+    for (const m of METHODS.filter(x=>x.group===g)){
+      const on = state.methods.includes(m.id);
+      const ov = state.overrides[m.id];
+      html += `<div class="method">
+        <input type="checkbox" data-m="${m.id}" ${on?"checked":""} aria-label="${esc(m.name)}">
+        <div class="grow"><div class="mname">${esc(m.name)}</div><div class="mkind">${esc(m.kind)}・標準 ${fmt(m.base)}%</div></div>
+        ${m.id==="cash"?"":`<label class="row" style="gap:4px"><input class="ov" type="number" step="0.1" min="0" data-ov="${m.id}" placeholder="${fmt(m.base)}" value="${ov!==undefined?esc(ov):""}"><span>%</span></label>`}
+      </div>`;
+    }
+  }
+  $("#methodlist").innerHTML = html;
+  $("#pclist").innerHTML = POINT_CARDS.map(p=>`<div class="method"><input type="checkbox" data-pc="${p.id}" ${state.pcs.includes(p.id)?"checked":""}><div class="grow"><div class="mname">${esc(p.name)}</div></div></div>`).join("");
+}
+
+function renderFavs(){
+  $("#storelist").innerHTML = STORES.map(s=>`<option value="${esc(s.name)}">`).join("");
+  if (!state.favs.length){ $("#favlist").innerHTML = `<div class="empty">まだ登録されていません。</div>`; return; }
+  $("#favlist").innerHTML = state.favs.map(id=>{
+    const s = STORES.find(x=>x.id===id); if (!s) return "";
+    const top = rank(s)[0];
+    return `<div class="fav-store">
+      <div style="cursor:pointer;flex:1" data-open="${esc(s.name)}"><div class="mname">${esc(s.name)}</div>
+      <div class="fav-best">${top?`おすすめ：${esc(top.m.name)} <b>${fmt(top.rate)}%</b>`:"使える支払い方法なし"}</div></div>
+      <button class="x" data-del="${id}" aria-label="削除">×</button></div>`;
+  }).join("");
+}
+
+/* ============ イベント ============ */
+document.querySelectorAll("nav.tabs button").forEach(b=>b.addEventListener("click",()=>showTab(b.dataset.tab)));
+function showTab(t){
+  document.querySelectorAll("nav.tabs button").forEach(b=>b.classList.toggle("on", b.dataset.tab===t));
+  ["search","fav","methods"].forEach(x=>$("#tab-"+x).classList.toggle("hidden", x!==t));
+  if (t==="fav") renderFavs();
+  if (t==="search"){ renderQuick(); doSearch(); }
+}
+$("#q").addEventListener("input", doSearch);
+$("#amt").addEventListener("input", doSearch);
+$("#quick").addEventListener("click", e=>{ const q=e.target.dataset.q; if(q){ $("#q").value=q; doSearch(); }});
+$("#methodlist").addEventListener("change", e=>{
+  const id = e.target.dataset.m;
+  if (id){ state.methods = e.target.checked ? [...new Set([...state.methods,id])] : state.methods.filter(x=>x!==id); save(); }
+});
+$("#methodlist").addEventListener("input", e=>{
+  const id = e.target.dataset.ov;
+  if (id){ if (e.target.value==="") delete state.overrides[id]; else state.overrides[id]=e.target.value; save(); }
+});
+$("#pclist").addEventListener("change", e=>{
+  const id = e.target.dataset.pc;
+  if (id){ state.pcs = e.target.checked ? [...new Set([...state.pcs,id])] : state.pcs.filter(x=>x!==id); save(); }
+});
+function addFav(){
+  const s = findStore($("#favq").value);
+  if (!s){ $("#favq").value=""; $("#favq").placeholder="データにないお店です（今は主要チェーンのみ）"; return; }
+  if (!state.favs.includes(s.id)) state.favs.push(s.id);
+  $("#favq").value=""; save(); renderFavs();
+}
+$("#favadd").addEventListener("click", addFav);
+$("#favq").addEventListener("keydown", e=>{ if(e.key==="Enter") addFav(); });
+$("#favlist").addEventListener("click", e=>{
+  if (e.target.dataset.del){ state.favs = state.favs.filter(x=>x!==e.target.dataset.del); save(); renderFavs(); return; }
+  const o = e.target.closest("[data-open]");
+  if (o){ $("#q").value = o.dataset.open; showTab("search"); }
+});
+
+renderMethods(); renderQuick(); doSearch();
+</script>
+</body>
+</html>
