@@ -101,6 +101,20 @@
       "annual_fee_yen": 0
     },
     {
+      "id": "kohnan_card",
+      "name": "コーナンカード",
+      "kind": "クレカ",
+      "group": "クレジットカード",
+      "base": 1.0,
+      "point": "ポイント",
+      "note": "コーナンでの利用は1.5%、ほかのお店は1%。年1回以上の利用で翌年の年会費が無料。",
+      "src": "https://www.hc-kohnan.com/",
+      "official_domains": [
+        "hc-kohnan.com"
+      ],
+      "annual_fee_yen": 0
+    },
+    {
       "id": "paypay",
       "name": "PayPay（残高払い）",
       "kind": "QR決済",
@@ -187,6 +201,23 @@
       ],
       "annual_fee_yen": 0,
       "monthly_cap_yen": 20000
+    },
+    {
+      "id": "kohnan_pay",
+      "name": "コーナンPay",
+      "kind": "QR決済（コーナン専用）",
+      "group": "お店専用の支払い",
+      "base": 1.0,
+      "point": "ボーナス残高",
+      "note": "1,000円チャージごとに1%のボーナス。コーナン以外のお店では使えません。",
+      "only_stores": [
+        "kohnan"
+      ],
+      "src": "https://www.hc-kohnan.com/",
+      "official_domains": [
+        "hc-kohnan.com"
+      ],
+      "annual_fee_yen": 0
     },
     {
       "id": "cash",
@@ -436,6 +467,34 @@
         "yahoo"
       ],
       "pc": []
+    },
+    {
+      "id": "okstore",
+      "name": "オーケー（OKストア）",
+      "cat": "スーパー",
+      "alias": [
+        "OKストア",
+        "オーケーストア",
+        "オーケー",
+        "OK",
+        "おーけー"
+      ],
+      "pc": []
+    },
+    {
+      "id": "kohnan",
+      "name": "コーナン",
+      "cat": "ホームセンター",
+      "alias": [
+        "ホームセンターコーナン",
+        "コーナンPRO",
+        "コーナンプロ",
+        "こーなん",
+        "kohnan"
+      ],
+      "pc": [
+        "rakuten"
+      ]
     }
   ],
   "rules": [
@@ -613,6 +672,33 @@
       "store": "kfc",
       "rate": 1.5,
       "label": "ダブルで貯まる対象店"
+    },
+    {
+      "method": "cash",
+      "store": "okstore",
+      "rate": 3.0,
+      "label": "オーケークラブ会員の現金払いで3%引き",
+      "note": "会員カード（発行費200円・年会費無料）を精算前に提示。クレジット・QR・電子マネーは割引の対象外。ポイントではなく値引きです。"
+    },
+    {
+      "method": "kohnan_card",
+      "store": "kohnan",
+      "rate": 1.5,
+      "label": "コーナンでの利用"
+    },
+    {
+      "method": "paypay",
+      "store": "aeon",
+      "rate": 0.5,
+      "label": "一部店舗のみ",
+      "note": "イオンでPayPayが使えるのは関東・山梨の一部店舗のみ。"
+    },
+    {
+      "method": "paypay_credit",
+      "store": "aeon",
+      "rate": 1.0,
+      "label": "一部店舗のみ",
+      "note": "イオンでPayPayが使えるのは関東・山梨の一部店舗のみ。"
     }
   ],
   "not_available": {
@@ -639,6 +725,17 @@
       "aupay",
       "aeon_pay",
       "cash"
+    ],
+    "aeon": [
+      "rakuten_pay",
+      "dbarai",
+      "aupay"
+    ],
+    "okstore": [
+      "aeon_pay"
+    ],
+    "kohnan": [
+      "aeon_pay"
     ]
   }
 }

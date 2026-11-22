@@ -141,7 +141,7 @@
 
   <footer>
     <span id="checked"></span><br>還元率は公式サイト等を確認した目安です。対象店舗・条件・上限・キャンペーンは頻繁に変わるため、実際の還元は各社の公式情報でご確認ください。<br>
-    プロトタイプ版（主要チェーン19店・決済14種のサンプルデータ）
+    プロトタイプ版（主要チェーン21店・決済16種のサンプルデータ）
   </footer>
 </div>
 
@@ -193,8 +193,13 @@ function activeMethods(){
 }
 function baseOf(m){ const o = state.overrides[m.id]; return (o!==undefined && o!=="" && !isNaN(o)) ? Number(o) : m.base; }
 
+function usableAt(m, store){
+  if (m.only_stores && (!store || !m.only_stores.includes(store.id))) return false;  // お店専用の支払い方法
+  if (store && NOT_AVAILABLE[store.id] && NOT_AVAILABLE[store.id].includes(m.id)) return false;
+  return true;
+}
 function methodRate(m, store){
-  if (store && NOT_AVAILABLE[store.id] && NOT_AVAILABLE[store.id].includes(m.id)) return null;
+  if (!usableAt(m, store)) return null;
   const base = baseOf(m);
   const rule = store && RULES.find(r=>r.m===m.id && r.s===store.id);
   return rule && rule.rate > base ? rule.rate : base;
@@ -203,7 +208,7 @@ function methodRate(m, store){
 /* ============ 見直しの試算 ============ */
 function spendOf(id){ const v = state.spend[id]; return (v===undefined || v==="") ? DEFAULT_SPEND : Math.max(0, Number(v)||0); }
 function suggest(){
-  const owned = METHODS.filter(m=>state.methods.includes(m.id) && m.id!=="cash");
+  const owned = METHODS.filter(m=>state.methods.includes(m.id) || m.id==="cash");
   const favs = state.favs.map(id=>STORES.find(s=>s.id===id)).filter(Boolean);
   const cur = favs.map(s=>{
     let best = {m:null, rate:0};
@@ -225,7 +230,7 @@ function suggest(){
     if (yearly >= 100) out.push({m, yearly, used, capped});
   }
   out.sort((a,b)=>b.yearly-a.yearly);
-  const unused = owned.filter(m=>!cur.some(c=>c.m===m));
+  const unused = owned.filter(m=>m.id!=="cash" && !cur.some(c=>c.m===m));
   return {curMonthly, out: out.slice(0,3), unused, favs};
 }
 
@@ -262,8 +267,12 @@ function renderSuggest(){
 
 function rank(store){
   const list = [];
-  for (const m of activeMethods()){
-    if (store && NOT_AVAILABLE[store.id] && NOT_AVAILABLE[store.id].includes(m.id)) continue;
+  const methods = activeMethods();
+  // 現金に特典があるお店（例：オーケーの現金割引）では、登録していなくても現金を比較に入れる
+  const cash = METHODS.find(x=>x.id==="cash");
+  if (store && cash && !methods.includes(cash) && RULES.some(r=>r.m==="cash" && r.s===store.id)) methods.push(cash);
+  for (const m of methods){
+    if (!usableAt(m, store)) continue;
     const base = baseOf(m);
     let rate = base, parts = [{t:`基本 ${fmt(base)}%`}], notes = [];
     const rule = store && RULES.find(r=>r.m===m.id && r.s===store.id);
