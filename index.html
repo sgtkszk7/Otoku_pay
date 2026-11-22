@@ -52,6 +52,11 @@
   .bd span{font-size:11.5px;padding:2px 8px;border-radius:6px;background:var(--bg);color:var(--muted)}
   .bd span.boost{background:var(--accent-soft);color:var(--accent)}
   .bd span.pc{background:var(--gold-soft);color:var(--gold)}
+  .bd span.warn{background:var(--warn-soft);color:var(--warn)}
+  .ai-box{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px}
+  .btn:disabled{opacity:.6;cursor:wait}
+  .sources{font-size:12.5px;margin-top:10px;border-top:1px solid var(--line);padding-top:8px;color:var(--muted)}
+  .sources a{color:var(--accent);word-break:break-all}
   .note{font-size:12.5px;color:var(--muted);margin-top:6px}
   .note a{color:var(--accent)}
   .banner{font-size:13px;border-radius:10px;padding:10px 12px;margin-bottom:12px;background:var(--warn-soft);color:var(--warn)}
@@ -147,11 +152,13 @@
 
 <script>
 /* ============ データ（data.json から読み込み） ============ */
-let CHECKED="", METHODS=[], POINT_CARDS=[], PC_RATE=0.5, STORES=[], RULES=[], NOT_AVAILABLE={};
+let CHECKED="", METHODS=[], POINT_CARDS=[], PC_RATE=0.5, STORES=[], RULES=[], NOT_AVAILABLE={}, LOOKUP_URL="";
 function loadData(d){
   CHECKED = d.checked_label || "";
   METHODS = d.methods; POINT_CARDS = d.point_cards; PC_RATE = d.point_card_rate;
-  STORES = d.stores; NOT_AVAILABLE = d.not_available || {};
+  STORES = d.stores; NOT_AVAILABLE = d.not_available || {}; LOOKUP_URL = d.lookup_endpoint || "";
+  // AI検索の窓口は GitHub Pages 版からだけ呼べる（他の場所では呼び出しが許可されない）
+  if (!/(^|\.)github\.io$|^localhost$/.test(location.hostname)) LOOKUP_URL = "";
   RULES = d.rules.map(r=>({m:r.method, s:r.store, rate:r.rate, label:r.label, note:r.note}));
 }
 
@@ -302,39 +309,117 @@ function rank(store){
 const $ = s => document.querySelector(s);
 function esc(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 
-function renderRanking(store, rawQuery){
+function listHtml(ranking){
   const amt = Math.max(0, Number($("#amt").value)||0);
-  const ranking = rank(store);
-  let html = "";
-  if (!state.methods.length){
-    html += `<div class="banner info">支払い方法がまだ登録されていないので、すべての支払い方法で比べています。「支払い方法」タブで自分のものを選ぶと、あなた専用のランキングになります。</div>`;
-  }
-  if (!store){
-    html += `<div class="banner">「${esc(rawQuery)}」のデータはまだありません。お店ごとの特典が入っていないので、<b>基本還元率</b>だけで比べています。</div>`;
-  }
-  html += `<div class="card">`;
-  if (store){
-    html += `<div class="store-head"><h2>${esc(store.name)}</h2><span class="cat">${esc(store.cat)}</span></div>`;
-  } else {
-    html += `<div class="store-head"><h2>基本還元率ランキング</h2></div>`;
-  }
-  if (!ranking.length){ html += `<div class="empty">このお店で使える支払い方法が登録されていません。</div>`; }
-  ranking.forEach((r,i)=>{
+  if (!ranking.length) return `<div class="empty">このお店で使える支払い方法が登録されていません。</div>`;
+  return ranking.map((r,i)=>{
     const pts = Math.floor(amt * r.rate / 100);
-    const top = i===0 && r.rate>0;
-    html += `<div class="rank ${top?"top":""}">
+    const top = i===0 && r.rate>0 && !r.unsure;
+    const src = r.m.src ? `<div>出典：<a href="${r.m.src}" target="_blank" rel="noopener">公式サイト</a>（${esc(CHECKED)}）</div>` : "";
+    return `<div class="rank ${top?"top":""}">
       <div class="num">${i+1}</div>
       <div>
         <div class="mname">${esc(r.m.name)}</div>
         <div class="mkind">${esc(r.m.kind)}・${esc(r.m.point)}</div>
         <div class="bd">${r.parts.map(p=>`<span class="${p.cls||""}">${esc(p.t)}</span>`).join("")}</div>
-        ${r.notes.length || r.m.src ? `<details class="note"><summary>条件・出典</summary>${r.notes.map(n=>`<div>・${esc(n)}</div>`).join("")}${r.m.src?`<div>出典：<a href="${r.m.src}" target="_blank" rel="noopener">公式サイト</a>（${CHECKED}）</div>`:""}</details>` : ""}
+        ${r.notes.length || src ? `<details class="note"><summary>条件・出典</summary>${r.notes.map(n=>`<div>・${esc(n)}</div>`).join("")}${src}</details>` : ""}
       </div>
       <div class="rate"><b>${fmt(r.rate)}%</b><div class="pts">${amt?`約${pts.toLocaleString()}pt`:""}</div></div>
     </div>`;
-  });
-  html += `</div>`;
+  }).join("");
+}
+
+const NOT_REGISTERED = `<div class="banner info">支払い方法がまだ登録されていないので、すべての支払い方法で比べています。「支払い方法」タブで自分のものを選ぶと、あなた専用のランキングになります。</div>`;
+
+function renderRanking(store, rawQuery){
+  if (!store) return renderUnknown(rawQuery);
+  let html = state.methods.length ? "" : NOT_REGISTERED;
+  html += `<div class="card"><div class="store-head"><h2>${esc(store.name)}</h2><span class="cat">${esc(store.cat)}</span></div>${listHtml(rank(store))}</div>`;
   $("#result").innerHTML = html;
+}
+
+/* ============ リストにないお店：AIで調べる ============ */
+const AI_DAYS = 7;
+let aiBusy = "";
+function aiKey(q){ return norm(q); }
+function aiCached(q){
+  const c = (state.ai || {})[aiKey(q)];
+  return (c && Date.now() - c.at < AI_DAYS*864e5) ? c.res : null;
+}
+function pcName(id){ const p = POINT_CARDS.find(x=>x.id===id); return p ? p.name.replace("カード","") : id; }
+
+function rankAI(res){
+  const byId = Object.fromEntries(res.methods.map(x=>[x.id, x]));
+  const list = [];
+  for (const m of activeMethods()){
+    if (m.id==="cash" || m.only_stores) continue;
+    const e = byId[m.id];
+    if (e && e.usable==="no") continue;
+    const base = baseOf(m);
+    let rate = base, parts = [{t:`基本 ${fmt(base)}%`}], notes = [];
+    if (e && typeof e.rate==="number" && e.rate > base){ rate = e.rate; parts = [{t:`このお店の特典 ${fmt(e.rate)}%`, cls:"boost"}]; }
+    const unsure = !e || e.usable!=="yes";
+    if (unsure) parts.push({t:"使えるか要確認", cls:"warn"});
+    if (e && e.note) notes.push(e.note);
+    if (m.note) notes.push(m.note);
+    const pcs = res.point_cards.filter(p=>state.pcs.includes(p));
+    let pcAdd = 0;
+    if (pcs.length){ pcAdd = PC_RATE; parts.push({t:`${pcName(pcs[0])}提示 +${fmt(PC_RATE)}%`, cls:"pc"}); }
+    list.push({m, rate: rate + pcAdd, parts, notes, unsure});
+  }
+  // 使えることが確認できたものを先に、その中で還元率の高い順
+  list.sort((a,b)=> (a.unsure - b.unsure) || (b.rate - a.rate) || a.m.name.localeCompare(b.m.name,"ja"));
+  return list;
+}
+
+function renderUnknown(q){
+  let html = state.methods.length ? "" : NOT_REGISTERED;
+  const res = aiCached(q);
+  if (res && res.found){
+    html += `<div class="banner info">AIがWeb検索で調べた結果です（${esc(res.checked_at)}時点）。使えるかどうかや還元率は、お店や各社の公式情報で確認してください。</div>`;
+    html += `<div class="card"><div class="store-head"><h2>${esc(res.store_name)}</h2><span class="cat">${esc(res.category||"AIで調査")}</span></div>`;
+    if (res.summary) html += `<p class="note" style="margin-top:0">${esc(res.summary)}</p>`;
+    html += listHtml(rankAI(res));
+    if (res.sources.length){
+      html += `<div class="sources">参考にしたページ：${res.sources.map(s=>`<div>・<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a></div>`).join("")}</div>`;
+    }
+    html += `</div>`;
+    $("#result").innerHTML = html; return;
+  }
+  if (res && !res.found){
+    html += `<div class="banner">「${esc(q)}」に当てはまるお店をAIが見つけられませんでした。正式な店名で試してみてください。</div>`;
+  } else {
+    html += `<div class="banner">「${esc(q)}」のデータはまだありません。今は<b>基本還元率</b>だけで比べています。`;
+    if (LOOKUP_URL){
+      const busy = aiBusy===aiKey(q);
+      html += `<div class="ai-box"><button class="btn" id="ai-btn" data-ai="${esc(q)}" ${busy?"disabled":""}>${busy?"AIが調べています…":"AIでこのお店を調べる"}</button><span id="ai-status" class="note" style="margin:0">${busy?"30秒〜1分ほどかかります":"使える支払い方法や特典をWebで調べます"}</span></div>`;
+    }
+    html += `</div>`;
+  }
+  html += `<div class="card"><div class="store-head"><h2>基本還元率ランキング</h2></div>${listHtml(rank(null))}</div>`;
+  $("#result").innerHTML = html;
+}
+
+async function lookupAI(q){
+  if (!LOOKUP_URL || aiBusy) return;
+  aiBusy = aiKey(q); doSearch();
+  try {
+    const r = await fetch(LOOKUP_URL, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({store:q})});
+    const d = await r.json().catch(()=>({}));
+    if (!r.ok) throw new Error(d.error || `エラー（${r.status}）`);
+    state.ai = state.ai || {};
+    state.ai[aiKey(q)] = {res:d, at:Date.now()};
+    const keys = Object.keys(state.ai).sort((a,b)=>state.ai[b].at - state.ai[a].at);
+    keys.slice(30).forEach(k=>delete state.ai[k]);  // 端末に残すのは最近の30件まで
+    save();
+    aiBusy = "";
+    if (aiKey($("#q").value.trim())===aiKey(q)) doSearch();
+  } catch(e){
+    aiBusy = "";
+    doSearch();
+    const st = $("#ai-status");
+    if (st){ st.textContent = `調べられませんでした：${e.message || "通信エラー"}`; st.style.color = "var(--warn)"; }
+  }
 }
 
 function doSearch(){
@@ -393,6 +478,7 @@ function showTab(t){
 }
 $("#q").addEventListener("input", doSearch);
 $("#amt").addEventListener("input", doSearch);
+$("#result").addEventListener("click", e=>{ const q = e.target.dataset && e.target.dataset.ai; if (q) lookupAI(q); });
 $("#quick").addEventListener("click", e=>{ const q=e.target.dataset.q; if(q){ $("#q").value=q; doSearch(); }});
 $("#methodlist").addEventListener("change", e=>{
   const id = e.target.dataset.m;

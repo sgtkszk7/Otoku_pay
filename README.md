@@ -8,6 +8,7 @@
 - **よく行くお店**：登録したお店ごとに、おすすめの支払い方法をひと目で確認
 - **支払い方法の見直し**：お店ごとの月の利用額から、今の支払い方法に追加すると年間でいくら多く貯まるかを試算（年会費・月の上限を考慮）
 - **支払い方法**：使っている決済にチェック。会員ランクなどに合わせて還元率を自分で上書き可能
+- **リストにないお店をAIで調べる**：データにない店名を入れると「AIでこのお店を調べる」ボタンが出て、使える支払い方法や特典をWeb検索で調べる（GitHub Pages版のみ）
 - **ポイントカード**：dポイント・楽天・Pontaカードの提示分を上乗せして計算
 
 データは利用者のブラウザ（localStorage）にのみ保存されます。カード番号などは扱いません。
@@ -44,8 +45,23 @@ Merge すると GitHub Pages に自動で反映されます。
 - Anthropic Console で Web 検索を有効化
 - 任意の Variables：`ANTHROPIC_MODEL`（既定 `claude-sonnet-5-5`）、`OPENAI_MODEL`（既定 `gpt-5.6`）
 
+## AI検索の中継プログラム（Cloudflare Workers）
+
+`worker/worker.js` は、アプリから店名を受け取り、Claude（Web検索つき）で調べて結果を返す中継プログラムです。APIキーをアプリ（誰でも見られる）に置かないために使います。
+
+- 呼び出せるのは `https://sgtkszk7.github.io` からだけ
+- 同じお店の結果は7日間キャッシュ（API代の節約）
+- AIの返答は、還元率0〜20%・既知の支払い方法・実際に検索したURLだけに絞ってから返す
+
+### 設定手順
+
+1. Cloudflare のダッシュボード →「Workers & Pages」→「Create」→「Start with Hello World!」で Worker を作る
+2.「Edit code」で `worker/worker.js` の中身に置き換えて「Deploy」
+3. Worker の「Settings」→「Variables and Secrets」で `ANTHROPIC_API_KEY` を **Secret** として追加
+4. 表示された Worker の URL（`https://〜.workers.dev`）を `data.json` の `lookup_endpoint` に入れる
+
 ## 今後の予定
 
 - 対象店舗リストの公式情報との突き合わせ
 - 店舗・キャンペーンデータの拡充
-- データにないお店をAIで調べる機能
+- AIで調べたお店を「よく行くお店」に登録できるようにする
