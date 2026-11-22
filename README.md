@@ -27,7 +27,7 @@
 
 ## 還元率の自動チェック
 
-`.github/workflows/rate-check.yml` が毎週月曜 9:17（日本時間）に `scripts/check_rates.py` を実行します。Actions タブから手動でも実行できます。
+`.github/workflows/rate-check.yml` が毎月1日 9:17（日本時間）に `scripts/check_rates.py` を実行します。Actions タブから手動でも実行できます。
 
 1. **Claude** が各決済の公式お知らせ・ニュースを調べ、`data.json` との違いを探す
 2. **ChatGPT** が出典ページを自分で読み、Claude の結論を見ずに還元率を答える
