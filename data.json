@@ -495,6 +495,30 @@
       "pc": [
         "rakuten"
       ]
+    },
+    {
+      "id": "muji",
+      "name": "無印良品",
+      "cat": "生活雑貨",
+      "alias": [
+        "無印",
+        "むじるし",
+        "むじ",
+        "MUJI",
+        "ムジ"
+      ],
+      "pc": []
+    },
+    {
+      "id": "uniqlo",
+      "name": "ユニクロ",
+      "cat": "衣料品",
+      "alias": [
+        "UNIQLO",
+        "ゆにくろ",
+        "ユニクロ"
+      ],
+      "pc": []
     }
   ],
   "rules": [
@@ -699,6 +723,41 @@
       "rate": 1.0,
       "label": "一部店舗のみ",
       "note": "イオンでPayPayが使えるのは関東・山梨の一部店舗のみ。"
+    },
+    {
+      "method": "paypay",
+      "store": "muji",
+      "rate": 0.5,
+      "label": "店舗による",
+      "note": "無印良品のQRコード決済は店舗によって対応が異なります（2026年3月以降、対応店舗が拡大中）。"
+    },
+    {
+      "method": "paypay_credit",
+      "store": "muji",
+      "rate": 1,
+      "label": "店舗による",
+      "note": "無印良品のQRコード決済は店舗によって対応が異なります（2026年3月以降、対応店舗が拡大中）。"
+    },
+    {
+      "method": "rakuten_pay",
+      "store": "muji",
+      "rate": 1.5,
+      "label": "店舗による",
+      "note": "無印良品のQRコード決済は店舗によって対応が異なります（2026年3月以降、対応店舗が拡大中）。"
+    },
+    {
+      "method": "dbarai",
+      "store": "muji",
+      "rate": 0.5,
+      "label": "店舗による",
+      "note": "無印良品のQRコード決済は店舗によって対応が異なります（2026年3月以降、対応店舗が拡大中）。"
+    },
+    {
+      "method": "aupay",
+      "store": "muji",
+      "rate": 0.5,
+      "label": "店舗による",
+      "note": "無印良品のQRコード決済は店舗によって対応が異なります（2026年3月以降、対応店舗が拡大中）。"
     }
   ],
   "not_available": {
@@ -735,6 +794,12 @@
       "aeon_pay"
     ],
     "kohnan": [
+      "aeon_pay"
+    ],
+    "muji": [
+      "aeon_pay"
+    ],
+    "uniqlo": [
       "aeon_pay"
     ]
   }
