@@ -1,0 +1,630 @@
+{
+  "updated": "2026-11-22",
+  "checked_label": "2026年11月確認",
+  "point_card_rate": 0.5,
+  "methods": [
+    {
+      "id": "smbc_nl",
+      "name": "三井住友カード(NL)",
+      "kind": "クレカ（スマホのタッチ決済）",
+      "group": "クレジットカード",
+      "base": 0.5,
+      "point": "Vポイント",
+      "note": "7%還元はスマホのVisa/Mastercardタッチ決済のみ。カード現物のタッチ・iD・差し込みは対象外。",
+      "src": "https://www.smbc-card.com/camp/article_numberless/index_a.jsp",
+      "official_domains": [
+        "smbc-card.com"
+      ]
+    },
+    {
+      "id": "rakuten_card",
+      "name": "楽天カード",
+      "kind": "クレカ",
+      "group": "クレジットカード",
+      "base": 1,
+      "point": "楽天ポイント",
+      "src": "https://www.rakuten-card.co.jp/",
+      "official_domains": [
+        "rakuten-card.co.jp"
+      ]
+    },
+    {
+      "id": "jcb_w",
+      "name": "JCB CARD W",
+      "kind": "クレカ",
+      "group": "クレジットカード",
+      "base": 1,
+      "point": "J-POINT",
+      "note": "パートナー店で倍率アップ。ポイントの交換先によって価値が目減りすることがあります。",
+      "src": "https://www.jcb.co.jp/",
+      "official_domains": [
+        "jcb.co.jp"
+      ]
+    },
+    {
+      "id": "seven_plus",
+      "name": "セブンカード・プラス",
+      "kind": "クレカ",
+      "group": "クレジットカード",
+      "base": 0.5,
+      "point": "nanacoポイント",
+      "src": "https://www.7card.co.jp/",
+      "official_domains": [
+        "7card.co.jp"
+      ]
+    },
+    {
+      "id": "dcard",
+      "name": "dカード",
+      "kind": "クレカ",
+      "group": "クレジットカード",
+      "base": 1,
+      "point": "dポイント",
+      "src": "https://dcard.docomo.ne.jp/",
+      "official_domains": [
+        "dcard.docomo.ne.jp",
+        "docomo.ne.jp"
+      ]
+    },
+    {
+      "id": "paypay_card",
+      "name": "PayPayカード（カード払い）",
+      "kind": "クレカ",
+      "group": "クレジットカード",
+      "base": 1,
+      "point": "PayPayポイント",
+      "note": "2026年6月2日以降、PayPayアプリに登録していないカードはポイント付与対象外。",
+      "src": "https://paypay.ne.jp/guide/paypay-card/",
+      "official_domains": [
+        "paypay-card.co.jp",
+        "paypay.ne.jp"
+      ]
+    },
+    {
+      "id": "aeon_card",
+      "name": "イオンカード",
+      "kind": "クレカ",
+      "group": "クレジットカード",
+      "base": 0.5,
+      "point": "WAON POINT",
+      "src": "https://www.aeon.co.jp/",
+      "official_domains": [
+        "aeon.co.jp",
+        "aeon.com"
+      ]
+    },
+    {
+      "id": "paypay",
+      "name": "PayPay（残高払い）",
+      "kind": "QR決済",
+      "group": "QR・スマホ決済",
+      "base": 0.5,
+      "point": "PayPayポイント",
+      "src": "https://paypay.ne.jp/event/paypaystep/",
+      "official_domains": [
+        "paypay.ne.jp"
+      ]
+    },
+    {
+      "id": "paypay_credit",
+      "name": "PayPay（クレジット払い）",
+      "kind": "QR決済",
+      "group": "QR・スマホ決済",
+      "base": 1,
+      "point": "PayPayポイント",
+      "note": "PayPayステップ達成（前月30回以上かつ10万円以上）で最大1.5%。本人確認が必要。",
+      "src": "https://paypay.ne.jp/event/paypaystep/",
+      "official_domains": [
+        "paypay.ne.jp",
+        "paypay-card.co.jp"
+      ]
+    },
+    {
+      "id": "rakuten_pay",
+      "name": "楽天ペイ（楽天キャッシュ払い）",
+      "kind": "QR決済",
+      "group": "QR・スマホ決済",
+      "base": 1.5,
+      "point": "楽天ポイント",
+      "note": "楽天カードからチャージ＋楽天ポイントカードを月2回以上提示が条件。未達成だと1.0%。",
+      "src": "https://pay.rakuten.co.jp/topics/pointprogram/",
+      "official_domains": [
+        "pay.rakuten.co.jp",
+        "rakuten-card.co.jp"
+      ]
+    },
+    {
+      "id": "dbarai",
+      "name": "d払い",
+      "kind": "QR決済",
+      "group": "QR・スマホ決済",
+      "base": 0.5,
+      "point": "dポイント",
+      "note": "ランクやdカード設定で上乗せあり。2026年9月から特典の月上限は一律200pt。",
+      "src": "https://service.smt.docomo.ne.jp/keitai_payment/topics/dcard/",
+      "official_domains": [
+        "docomo.ne.jp"
+      ]
+    },
+    {
+      "id": "aupay",
+      "name": "au PAY（コード支払い）",
+      "kind": "QR決済",
+      "group": "QR・スマホ決済",
+      "base": 0.5,
+      "point": "Pontaポイント",
+      "note": "Pontaパス会員はローソンなど対象店で利用回数に応じて上乗せ。",
+      "src": "https://www.au.com/",
+      "official_domains": [
+        "au.com",
+        "aupay.auone.jp"
+      ]
+    },
+    {
+      "id": "aeon_pay",
+      "name": "AEON Pay",
+      "kind": "QR決済",
+      "group": "QR・スマホ決済",
+      "base": 1.5,
+      "point": "WAON POINT",
+      "note": "2026年10月20日〜の特典。月2万円までの利用分が対象、予告なく終了の可能性あり。",
+      "src": "https://www.aeon.com/aeonapp/campaign/202611_ap1-5/",
+      "official_domains": [
+        "aeon.com",
+        "aeon.co.jp"
+      ]
+    },
+    {
+      "id": "cash",
+      "name": "現金",
+      "kind": "現金",
+      "group": "その他",
+      "base": 0,
+      "point": "—",
+      "official_domains": []
+    }
+  ],
+  "point_cards": [
+    {
+      "id": "d",
+      "name": "dポイントカード"
+    },
+    {
+      "id": "rakuten",
+      "name": "楽天ポイントカード"
+    },
+    {
+      "id": "ponta",
+      "name": "Pontaカード"
+    }
+  ],
+  "stores": [
+    {
+      "id": "seven",
+      "name": "セブン-イレブン",
+      "cat": "コンビニ",
+      "alias": [
+        "セブン",
+        "セブンイレブン",
+        "セブイレ",
+        "7-11",
+        "7イレブン",
+        "seven"
+      ],
+      "pc": []
+    },
+    {
+      "id": "lawson",
+      "name": "ローソン",
+      "cat": "コンビニ",
+      "alias": [
+        "lawson",
+        "ろーそん"
+      ],
+      "pc": [
+        "d",
+        "ponta"
+      ]
+    },
+    {
+      "id": "famima",
+      "name": "ファミリーマート",
+      "cat": "コンビニ",
+      "alias": [
+        "ファミマ",
+        "famima",
+        "ふぁみま"
+      ],
+      "pc": [
+        "d",
+        "rakuten"
+      ]
+    },
+    {
+      "id": "mcd",
+      "name": "マクドナルド",
+      "cat": "飲食",
+      "alias": [
+        "マック",
+        "マクド",
+        "mcdonalds",
+        "まっく"
+      ],
+      "pc": [
+        "d",
+        "rakuten"
+      ]
+    },
+    {
+      "id": "sukiya",
+      "name": "すき家",
+      "cat": "飲食",
+      "alias": [
+        "すきや",
+        "スキヤ"
+      ],
+      "pc": [
+        "rakuten"
+      ]
+    },
+    {
+      "id": "gusto",
+      "name": "ガスト",
+      "cat": "飲食",
+      "alias": [
+        "がすと"
+      ],
+      "pc": [
+        "rakuten"
+      ]
+    },
+    {
+      "id": "saizeriya",
+      "name": "サイゼリヤ",
+      "cat": "飲食",
+      "alias": [
+        "サイゼ",
+        "サイゼリア",
+        "さいぜ"
+      ],
+      "pc": []
+    },
+    {
+      "id": "doutor",
+      "name": "ドトール",
+      "cat": "カフェ",
+      "alias": [
+        "ドトールコーヒー",
+        "どとーる"
+      ],
+      "pc": []
+    },
+    {
+      "id": "kfc",
+      "name": "ケンタッキーフライドチキン",
+      "cat": "飲食",
+      "alias": [
+        "ケンタッキー",
+        "ケンタ",
+        "kfc"
+      ],
+      "pc": [
+        "rakuten",
+        "ponta"
+      ]
+    },
+    {
+      "id": "mos",
+      "name": "モスバーガー",
+      "cat": "飲食",
+      "alias": [
+        "モス",
+        "もす"
+      ],
+      "pc": []
+    },
+    {
+      "id": "starbucks",
+      "name": "スターバックス",
+      "cat": "カフェ",
+      "alias": [
+        "スタバ",
+        "スターバックスコーヒー",
+        "starbucks",
+        "すたば"
+      ],
+      "pc": []
+    },
+    {
+      "id": "aeon",
+      "name": "イオン",
+      "cat": "スーパー",
+      "alias": [
+        "イオンモール",
+        "イオンスタイル",
+        "aeon",
+        "マックスバリュ",
+        "いおん"
+      ],
+      "pc": []
+    },
+    {
+      "id": "matsukiyo",
+      "name": "マツモトキヨシ",
+      "cat": "ドラッグストア",
+      "alias": [
+        "マツキヨ",
+        "まつきよ"
+      ],
+      "pc": [
+        "d"
+      ]
+    },
+    {
+      "id": "tsuruha",
+      "name": "ツルハドラッグ",
+      "cat": "ドラッグストア",
+      "alias": [
+        "ツルハ",
+        "つるは"
+      ],
+      "pc": [
+        "rakuten"
+      ]
+    },
+    {
+      "id": "welcia",
+      "name": "ウェルシア",
+      "cat": "ドラッグストア",
+      "alias": [
+        "うぇるしあ"
+      ],
+      "pc": []
+    },
+    {
+      "id": "bic",
+      "name": "ビックカメラ",
+      "cat": "家電",
+      "alias": [
+        "ビック",
+        "びっくかめら"
+      ],
+      "pc": []
+    },
+    {
+      "id": "amazon",
+      "name": "Amazon",
+      "cat": "ネット通販",
+      "alias": [
+        "アマゾン",
+        "amazon",
+        "あまぞん"
+      ],
+      "pc": []
+    },
+    {
+      "id": "rakuten_ichiba",
+      "name": "楽天市場",
+      "cat": "ネット通販",
+      "alias": [
+        "楽天",
+        "らくてん"
+      ],
+      "pc": []
+    },
+    {
+      "id": "yahoo",
+      "name": "Yahoo!ショッピング",
+      "cat": "ネット通販",
+      "alias": [
+        "ヤフショ",
+        "ヤフー",
+        "yahoo"
+      ],
+      "pc": []
+    }
+  ],
+  "rules": [
+    {
+      "method": "smbc_nl",
+      "store": "seven",
+      "rate": 7,
+      "label": "対象店でスマホタッチ7%",
+      "note": "セブン-イレブンアプリ提示などの条件で最大10%。"
+    },
+    {
+      "method": "smbc_nl",
+      "store": "lawson",
+      "rate": 7,
+      "label": "対象店でスマホタッチ7%",
+      "note": "商業施設内の店舗など一部対象外あり。"
+    },
+    {
+      "method": "smbc_nl",
+      "store": "famima",
+      "rate": 7,
+      "label": "対象店でスマホタッチ7%",
+      "note": "商業施設内の店舗など一部対象外あり。"
+    },
+    {
+      "method": "smbc_nl",
+      "store": "mcd",
+      "rate": 7,
+      "label": "対象店でスマホタッチ7%",
+      "note": "商業施設内の店舗など一部対象外あり。"
+    },
+    {
+      "method": "smbc_nl",
+      "store": "sukiya",
+      "rate": 7,
+      "label": "対象店でスマホタッチ7%",
+      "note": "商業施設内の店舗など一部対象外あり。"
+    },
+    {
+      "method": "smbc_nl",
+      "store": "gusto",
+      "rate": 7,
+      "label": "対象店でスマホタッチ7%",
+      "note": "商業施設内の店舗など一部対象外あり。"
+    },
+    {
+      "method": "smbc_nl",
+      "store": "saizeriya",
+      "rate": 7,
+      "label": "対象店でスマホタッチ7%",
+      "note": "商業施設内の店舗など一部対象外あり。"
+    },
+    {
+      "method": "smbc_nl",
+      "store": "doutor",
+      "rate": 7,
+      "label": "対象店でスマホタッチ7%",
+      "note": "商業施設内の店舗など一部対象外あり。"
+    },
+    {
+      "method": "smbc_nl",
+      "store": "kfc",
+      "rate": 7,
+      "label": "対象店でスマホタッチ7%",
+      "note": "商業施設内の店舗など一部対象外あり。"
+    },
+    {
+      "method": "smbc_nl",
+      "store": "mos",
+      "rate": 7,
+      "label": "対象店でスマホタッチ7%",
+      "note": "商業施設内の店舗など一部対象外あり。"
+    },
+    {
+      "method": "seven_plus",
+      "store": "seven",
+      "rate": 10,
+      "label": "セブンで最大10%",
+      "note": "7iDにカード登録が必要。引落口座をセブン銀行にすると+1%。"
+    },
+    {
+      "method": "jcb_w",
+      "store": "seven",
+      "rate": 1.5,
+      "label": "パートナー店"
+    },
+    {
+      "method": "jcb_w",
+      "store": "starbucks",
+      "rate": 10.5,
+      "label": "スタバカード入金で最大10.5%",
+      "note": "スターバックスカードへのオンライン入金が対象。店頭でのカード払いとは別。"
+    },
+    {
+      "method": "jcb_w",
+      "store": "amazon",
+      "rate": 2,
+      "label": "パートナー店"
+    },
+    {
+      "method": "aeon_card",
+      "store": "aeon",
+      "rate": 1,
+      "label": "イオングループでいつでも2倍",
+      "note": "毎月10日（ありが10デー）は5倍、20日・30日は5%オフなど特定日あり。"
+    },
+    {
+      "method": "aeon_pay",
+      "store": "aeon",
+      "rate": 1.5,
+      "label": "イオングループ",
+      "note": "毎月10日はAEON Payデーで基本の10倍。"
+    },
+    {
+      "method": "rakuten_card",
+      "store": "rakuten_ichiba",
+      "rate": 3,
+      "label": "SPUで3%〜",
+      "note": "楽天市場のSPU（会員条件で変動）。"
+    },
+    {
+      "method": "paypay_card",
+      "store": "yahoo",
+      "rate": 5,
+      "label": "毎日最大5%",
+      "note": "LINE連携など条件あり。"
+    },
+    {
+      "method": "paypay_credit",
+      "store": "yahoo",
+      "rate": 5,
+      "label": "毎日最大5%",
+      "note": "LINE連携など条件あり。"
+    },
+    {
+      "method": "aupay",
+      "store": "lawson",
+      "rate": 0.5,
+      "label": "Pontaパスで上乗せ",
+      "note": "Pontaパス会員はローソンで利用回数に応じて還元率アップ（期間限定で最大10%の月も）。"
+    },
+    {
+      "method": "dcard",
+      "store": "lawson",
+      "rate": 1,
+      "label": "dカード特約店",
+      "note": "dポイントカード提示と合わせて最大2%程度。"
+    },
+    {
+      "method": "rakuten_pay",
+      "store": "famima",
+      "rate": 1.5,
+      "label": "ダブルで貯まる対象店"
+    },
+    {
+      "method": "rakuten_pay",
+      "store": "sukiya",
+      "rate": 1.5,
+      "label": "ダブルで貯まる対象店"
+    },
+    {
+      "method": "rakuten_pay",
+      "store": "gusto",
+      "rate": 1.5,
+      "label": "ダブルで貯まる対象店"
+    },
+    {
+      "method": "rakuten_pay",
+      "store": "tsuruha",
+      "rate": 1.5,
+      "label": "ダブルで貯まる対象店"
+    },
+    {
+      "method": "rakuten_pay",
+      "store": "kfc",
+      "rate": 1.5,
+      "label": "ダブルで貯まる対象店"
+    }
+  ],
+  "not_available": {
+    "amazon": [
+      "paypay",
+      "paypay_credit",
+      "rakuten_pay",
+      "dbarai",
+      "aupay",
+      "aeon_pay",
+      "cash"
+    ],
+    "rakuten_ichiba": [
+      "paypay",
+      "paypay_credit",
+      "dbarai",
+      "aupay",
+      "aeon_pay",
+      "cash"
+    ],
+    "yahoo": [
+      "rakuten_pay",
+      "dbarai",
+      "aupay",
+      "aeon_pay",
+      "cash"
+    ]
+  }
+}

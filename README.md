@@ -19,7 +19,29 @@
 
 還元率は2026年11月時点で公式サイト等を確認した目安です（プロトタイプ：主要チェーン19店・決済14種）。対象店舗・条件・上限・キャンペーンは頻繁に変わるため、実際の還元は各社の公式情報で確認してください。
 
-データは `index.html` 内の `METHODS`（支払い方法）・`STORES`（お店）・`RULES`（お店ごとの特典）で管理しています。
+データは `data.json` で管理しています。
+
+- `methods`：支払い方法（基本還元率・注意書き・出典・公式ドメイン）
+- `stores`：お店（名前・別名・使えるポイントカード）
+- `rules`：お店ごとの特典（そのお店での合計還元率）
+
+## 還元率の自動チェック
+
+`.github/workflows/rate-check.yml` が毎週月曜 9:17（日本時間）に `scripts/check_rates.py` を実行します。Actions タブから手動でも実行できます。
+
+1. **Claude** が各決済の公式お知らせ・ニュースを調べ、`data.json` との違いを探す
+2. **ChatGPT** が出典ページを自分で読み、Claude の結論を見ずに還元率を答える
+3. **機械チェック**：還元率が0〜20%か、出典が公式サイトか、適用日を過ぎているか
+4. すべて一致した変更だけ `data.json` に反映し、**Pull Request** を作成。食い違いなどは「要確認」として本文に記載
+
+Merge すると GitHub Pages に自動で反映されます。
+
+### 必要な設定
+
+- Secrets（Settings → Secrets and variables → Actions）：`ANTHROPIC_API_KEY`、`OPENAI_API_KEY`
+- Settings → Actions → General →「Allow GitHub Actions to create and approve pull requests」をオン
+- Anthropic Console で Web 検索を有効化
+- 任意の Variables：`ANTHROPIC_MODEL`（既定 `claude-sonnet-5-5`）、`OPENAI_MODEL`（既定 `gpt-5.6`）
 
 ## 今後の予定
 
