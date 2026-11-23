@@ -7,6 +7,9 @@
  * 設定（Cloudflare のダッシュボード → このWorker → Settings → Variables and Secrets）
  *   ANTHROPIC_API_KEY : Claude の APIキー（Secret として登録。コードには書かない）
  *   ANTHROPIC_MODEL   : 任意。使うモデル名（既定 claude-sonnet-5-5）
+ *   ALLOW_SCOPES      : 任意。調べられるお店の範囲（既定 "national"）
+ *                       national=全国チェーン, regional=地域チェーン, local=個人店など
+ *                       例："national,regional" にすると地域チェーンも対象になる
  */
 
 const DATA_URL = "https://sgtkszk7.github.io/Otoku_pay/data.json";
@@ -14,6 +17,7 @@ const ALLOWED_ORIGINS = ["https://sgtkszk7.github.io"];
 const DEFAULT_MODEL = "claude-sonnet-5-5";
 const CACHE_SECONDS = 7 * 24 * 60 * 60; // 同じお店は7日間、前回の結果を使い回す
 const POINT_CARD_IDS = ["d", "rakuten", "ponta"];
+const SCOPES = ["national", "regional", "local", "unknown"];
 
 export default {
   async fetch(request, env, ctx) {
@@ -59,6 +63,12 @@ export default {
     try {
       const { text, seenUrls } = await askClaude(env, buildPrompt(store, methods));
       result = sanitize(extractJson(text), methods, seenUrls, store);
+      // 対象外の範囲のお店（地元のお店など）は、調べた中身を返さない
+      const allow = (env.ALLOW_SCOPES || "national").split(",").map((x) => x.trim());
+      if (result.found && !allow.includes(result.chain_scope)) {
+        result = { found: true, blocked: true, query: store, store_name: result.store_name,
+                   chain_scope: result.chain_scope, allowed_scopes: allow, checked_at: result.checked_at };
+      }
     } catch (e) {
       return json({ error: "AIでの調査に失敗しました。時間をおいてもう一度お試しください。" }, 502, cors);
     }
@@ -80,6 +90,10 @@ ${list}
 ルール:
 - Web検索で、お店の公式サイト（支払い方法の案内ページなど）や決済会社の公式情報を優先して確認してください。
 - お店が特定できない、または日本に実店舗がない場合は found を false にしてください。
+- chain_scope には、お店の展開範囲を入れてください。
+  "national"=全国の複数の地方（例：関東と関西など）に店舗を展開するチェーン、
+  "regional"=特定の地方や都道府県を中心に複数店舗を展開するチェーン、
+  "local"=1〜数店舗の個人店・地元のお店、"unknown"=判断できない。
 - 使えることが確認できたら usable は "yes"、使えないと確認できたら "no"、わからなければ "unknown"。
 - そのお店で、通常より還元率が上がる常設の特典（特約店・パートナー店など）がある場合だけ、rate に合計の還元率(%)を入れてください。なければ rate は null です。
 - 1か月未満の期間限定キャンペーン、抽選、エントリー制の一時的な施策は含めないでください。
@@ -87,7 +101,7 @@ ${list}
 - 推測で埋めないでください。
 
 最後に、次の形のJSONだけを出力してください:
-{"found": true, "store_name": "正式な店名", "category": "飲食・スーパーなど",
+{"found": true, "store_name": "正式な店名", "category": "飲食・スーパーなど", "chain_scope": "national",
  "methods": [{"id": "支払い方法のid", "usable": "yes|no|unknown", "rate": null, "note": "補足（40字以内、なければ空）"}],
  "point_cards": [], "summary": "このお店の支払いのポイント（80字以内）",
  "sources": [{"title": "ページ名", "url": "https://..."}]}`;
@@ -144,6 +158,7 @@ function sanitize(r, methods, seenUrls, store) {
     query: store,
     store_name: str(r.store_name, 40) || store,
     category: str(r.category, 20),
+    chain_scope: SCOPES.includes(r.chain_scope) ? r.chain_scope : "unknown",
     summary: str(r.summary, 120),
     methods: [],
     point_cards: Array.isArray(r.point_cards) ? r.point_cards.filter((p) => POINT_CARD_IDS.includes(p)) : [],

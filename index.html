@@ -53,6 +53,11 @@
   .bd span.boost{background:var(--accent-soft);color:var(--accent)}
   .bd span.pc{background:var(--gold-soft);color:var(--gold)}
   .bd span.warn{background:var(--warn-soft);color:var(--warn)}
+  .hint{font-size:12px;color:var(--muted);margin:6px 2px 0}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:20px;z-index:10}
+  .modal.hidden{display:none}
+  .modal-box{background:var(--card);border-radius:var(--radius);padding:20px;max-width:400px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+  .modal-box h2{margin:0 0 8px}
   .ai-box{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px}
   .btn:disabled{opacity:.6;cursor:wait}
   .sources{font-size:12.5px;margin-top:10px;border-top:1px solid var(--line);padding-top:8px;color:var(--muted)}
@@ -109,6 +114,7 @@
       <div class="row">
         <input id="q" type="text" placeholder="例：セブン、マック、スタバ" autocomplete="off">
       </div>
+      <p class="hint">※ 検索できるのは、全国に展開しているチェーン店です。</p>
       <div class="row" style="margin-top:10px">
         <span class="label" style="margin:0;flex:1">お会計の金額（ポイント数の目安を出します）</span>
         <input id="amt" class="amount" type="number" min="0" step="100" value="1000"><span>円</span>
@@ -148,6 +154,14 @@
     <span id="checked"></span><br>還元率は公式サイト等を確認した目安です。対象店舗・条件・上限・キャンペーンは頻繁に変わるため、実際の還元は各社の公式情報でご確認ください。<br>
     プロトタイプ版（主要チェーン23店・決済16種のサンプルデータ）
   </footer>
+</div>
+
+<div class="modal hidden" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal-box">
+    <h2 id="modal-title"></h2>
+    <div id="modal-body" class="note" style="font-size:14px"></div>
+    <div style="text-align:right;margin-top:14px"><button class="btn" id="modal-ok">OK</button></div>
+  </div>
 </div>
 
 <script>
@@ -375,6 +389,11 @@ function rankAI(res){
 function renderUnknown(q){
   let html = state.methods.length ? "" : NOT_REGISTERED;
   const res = aiCached(q);
+  if (res && res.blocked){
+    html += `<div class="banner">${esc(blockedMessage(res))}</div>`;
+    html += `<div class="card"><div class="store-head"><h2>基本還元率ランキング</h2></div>${listHtml(rank(null))}</div>`;
+    $("#result").innerHTML = html; return;
+  }
   if (res && res.found){
     html += `<div class="banner info">AIがWeb検索で調べた結果です（${esc(res.checked_at)}時点）。使えるかどうかや還元率は、お店や各社の公式情報で確認してください。</div>`;
     html += `<div class="card"><div class="store-head"><h2>${esc(res.store_name)}</h2><span class="cat">${esc(res.category||"AIで調査")}</span></div>`;
@@ -400,6 +419,19 @@ function renderUnknown(q){
   $("#result").innerHTML = html;
 }
 
+const SCOPE_LABEL = {national:"全国チェーン", regional:"地域のチェーン店", local:"地元のお店", unknown:"展開範囲がわからないお店"};
+function blockedMessage(res){
+  const nationalOnly = (res.allowed_scopes || ["national"]).join(",") === "national";
+  const rule = nationalOnly ? "検索可能な店舗は、全国に展開されているチェーン店のみです。" : "このお店は検索の対象外です。";
+  return `${rule}「${res.store_name || res.query}」は${SCOPE_LABEL[res.chain_scope] || "対象外のお店"}と判断されたため、お店ごとの情報は表示できません。下は基本還元率だけで比べた結果です。`;
+}
+function showDialog(title, body){
+  $("#modal-title").textContent = title; $("#modal-body").textContent = body;
+  $("#modal").classList.remove("hidden"); $("#modal-ok").focus();
+}
+$("#modal-ok").addEventListener("click", ()=>$("#modal").classList.add("hidden"));
+$("#modal").addEventListener("click", e=>{ if (e.target.id==="modal") $("#modal").classList.add("hidden"); });
+
 async function lookupAI(q){
   if (!LOOKUP_URL || aiBusy) return;
   aiBusy = aiKey(q); doSearch();
@@ -414,6 +446,7 @@ async function lookupAI(q){
     save();
     aiBusy = "";
     if (aiKey($("#q").value.trim())===aiKey(q)) doSearch();
+    if (d.blocked) showDialog("検索の対象外のお店です", blockedMessage(d));
   } catch(e){
     aiBusy = "";
     doSearch();
