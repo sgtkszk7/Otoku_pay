@@ -259,12 +259,25 @@ function ownPoint(m, store){
   if (typeof v !== "number") return null;
   return {rate:v, name:o.name, relative:!!o.relative, cond};
 }
+/* チャージして使う支払い方法（スタバカードなど）：チャージに使うクレジットカードのポイントを足す */
+function chargeSource(m){
+  if (!m.charge) return null;
+  const cards = METHODS.filter(c=>c.group==="クレジットカード" && !c.only_stores &&
+    (state.methods.length ? state.methods.includes(c.id) : true));
+  let best = null;
+  for (const c of cards){
+    const r = (m.charge_rates && typeof m.charge_rates[c.id]==="number") ? m.charge_rates[c.id] : baseOf(c);
+    if (!best || r > best.rate) best = {card:c, rate:r};
+  }
+  return best;
+}
 function methodRate(m, store){
   if (!usableAt(m, store)) return null;
   const base = baseOf(m);
   const rule = store && RULES.find(r=>r.m===m.id && r.s===store.id);
   const op = ownPoint(m, store);
-  return (rule && rule.rate > base ? rule.rate : base) + (op ? op.rate : 0);
+  const ch = chargeSource(m);
+  return (rule && rule.rate > base ? rule.rate : base) + (op ? op.rate : 0) + (ch ? ch.rate : 0);
 }
 
 /* ============ 見直しの試算 ============ */
@@ -337,7 +350,7 @@ function rank(store){
   for (const m of methods){
     if (!usableAt(m, store)) continue;
     const base = baseOf(m);
-    let rate = base, parts = [{t:`基本 ${fmt(base)}%`}], notes = [];
+    let rate = base, parts = [{t:`${m.charge ? m.point : "基本"} ${fmt(base)}%`}], notes = [];
     const rule = store && RULES.find(r=>r.m===m.id && r.s===store.id);
     if (rule){
       if (rule.rate > base){ parts = [{t:`${rule.label} ${fmt(rule.rate)}%`, cls:"boost"}]; rate = rule.rate; }
@@ -357,6 +370,16 @@ function rank(store){
         : `${op.name} +${fmt(op.rate)}%`;
       parts.push({t:label, cls:"own"});
       if (op.cond) notes.push(`${op.name}：${op.cond}`);
+    }
+    if (m.charge){
+      const ch = chargeSource(m);
+      if (ch){
+        rate += ch.rate;
+        parts.push({t:`チャージ：${ch.card.name} +${fmt(ch.rate)}%`, cls:"boost"});
+        notes.push(`${ch.card.name}でチャージした場合のカードのポイントを足しています。`);
+      } else {
+        notes.push("チャージに使うクレジットカードを登録すると、カードのポイント分も足して計算します。");
+      }
     }
     if (m.note) notes.push(m.note);
     // ポイントカード提示（ネット通販以外）

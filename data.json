@@ -204,6 +204,27 @@
       "monthly_cap_yen": 20000
     },
     {
+      "id": "sbux_card",
+      "name": "スターバックスカード",
+      "kind": "プリペイド（スタバ専用）",
+      "group": "お店専用の支払い",
+      "base": 5.5,
+      "point": "Star",
+      "only_stores": [
+        "starbucks"
+      ],
+      "charge": true,
+      "charge_rates": {
+        "jcb_w": 5.5
+      },
+      "note": "税込60円で1 Star。Starの価値は交換先によって約3.6〜7.9%で、300円のeTicket（90 Star）に交換した場合の約5.5%で計算しています。公式アプリに登録したスタバカードで払うのが条件で、Starには有効期限があります。",
+      "src": "https://www.starbucks.co.jp/rewards/",
+      "official_domains": [
+        "starbucks.co.jp"
+      ],
+      "annual_fee_yen": 0
+    },
+    {
       "id": "kohnan_pay",
       "name": "コーナンPay",
       "kind": "QR決済（コーナン専用）",
@@ -798,13 +819,6 @@
       "store": "seven",
       "rate": 1.5,
       "label": "パートナー店"
-    },
-    {
-      "method": "jcb_w",
-      "store": "starbucks",
-      "rate": 10.5,
-      "label": "スタバカード入金で最大10.5%",
-      "note": "スターバックスカードへのオンライン入金が対象。店頭でのカード払いとは別。"
     },
     {
       "method": "jcb_w",
