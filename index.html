@@ -350,7 +350,7 @@ function rank(store){
   for (const m of methods){
     if (!usableAt(m, store)) continue;
     const base = baseOf(m);
-    let rate = base, parts = [{t:`${m.charge ? m.point : "基本"} ${fmt(base)}%`}], notes = [];
+    let rate = base, parts = m.charge ? [] : [{t:`基本 ${fmt(base)}%`}], notes = [];
     const rule = store && RULES.find(r=>r.m===m.id && r.s===store.id);
     if (rule){
       if (rule.rate > base){ parts = [{t:`${rule.label} ${fmt(rule.rate)}%`, cls:"boost"}]; rate = rule.rate; }
@@ -370,6 +370,12 @@ function rank(store){
         : `${op.name} +${fmt(op.rate)}%`;
       parts.push({t:label, cls:"own"});
       if (op.cond) notes.push(`${op.name}：${op.cond}`);
+    }
+    if (m.star_yen){
+      // Starは%に換算せず、貯まる数の目安だけを出す
+      const amt = Math.max(0, Number($("#amt").value)||0);
+      const stars = Math.floor(amt / m.star_yen);
+      parts.push({t: amt ? `Star 約${stars}個（${m.star_yen}円で1個）` : `Starが貯まる（${m.star_yen}円で1個）`, cls:"own"});
     }
     if (m.charge){
       const ch = chargeSource(m);
@@ -395,7 +401,7 @@ function rank(store){
     list.push({m, rate: rate + pcAdd, parts, notes, unsure});
   }
   // 条件が確認できているものを先に、その中で還元率の高い順
-  list.sort((a,b)=>(a.unsure - b.unsure) || b.rate-a.rate || a.m.name.localeCompare(b.m.name,"ja"));
+  list.sort((a,b)=>(a.unsure - b.unsure) || b.rate-a.rate || (!!b.m.star_yen - !!a.m.star_yen) || a.m.name.localeCompare(b.m.name,"ja"));
   return list;
 }
 
