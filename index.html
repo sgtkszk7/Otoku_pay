@@ -381,7 +381,16 @@ function usableAt(m, store){
 /* お店独自のポイント（家電量販店など）：支払い方法の種類で付与率が変わる */
 function appShown(store){ return state.app[store.id] !== false; }  // 初期値は「提示する」
 // そのお店で提示できる、持っているポイントカードのうち一番率の高いもの（1回の会計で提示できるのは1枚）
-function scenarioOf(store){ return store?.scenarios?.find(x=>x.id===state.scenario[store.id]) || store?.scenarios?.[0]; }
+// typical=true：見直しの試算用。特定の日だけの条件（感謝デーなど）ではなく、ふだんの日で計算する
+function scenarioOf(store, typical=false){
+  const list = store?.scenarios; if (!list) return undefined;
+  const saved = list.find(x=>x.id===state.scenario[store.id]);
+  if (typical) return (saved && !saved.days) ? saved : (list.find(x=>!x.days) || list[0]);
+  if (saved) return saved;
+  // 日付で決まる条件（イオンの感謝デーなど）は、選んでいなければ今日に合わせる
+  const day = Number(dateJST().slice(8,10));
+  return list.find(x=>x.days?.includes(day)) || list.find(x=>!x.days) || list[0];
+}
 function bestPointCard(store){
   if (!store || !store.pc || !store.pc.length) return null;
   let best = null;
@@ -474,12 +483,12 @@ function simulate(wallet, favs, usual=false){
   const entries = [], omitted = [], winners = new Set(), today=dateJST();
   const periods=estimatePeriods(wallet,today);
   for (const s of favs){
-    const top = bestOf(rank(s,wallet,today));
+    const top = bestOf(rank(s,wallet,today,true));
     if (top) winners.add(top.m.id);
     if (!top || top.kind==="relative"){ omitted.push(s.name); continue; }
     let months=0, assigned=0;
     for (const period of periods){
-      const list=rank(s,wallet,period.date);
+      const list=rank(s,wallet,period.date,true);
       const selected = usual && onlyUsual(s,list);
       months += period.months;
       const cumulative=Math.round(spendOf(s.id)*months);
@@ -526,11 +535,11 @@ function renderSuggest(){
   }
   if (!r.out.length && r.cur.entries.length) html += '<div class="note">試算対象で年間100円以上増える追加候補はありません。</div>';
   if (r.unused.length) html += '<div class="note">'+r.unused.map(m=>esc(m.name)).join("、")+'は、登録店の1位・上限超過分の支払い・チャージのいずれにも使っていません。</div>';
-  el.innerHTML = html+'<p class="note">当月から12か月、毎月同額を月内で均等に使う前提です。期間が登録されている特典は対象日だけ加算します。対象となる提示ポイントを含め、1ポイント＝1円相当で試算します。月・年の上限は登録店全体で共有し、利用明細ごとの端数は概算です。</p>';
+  el.innerHTML = html+'<p class="note">当月から12か月、毎月同額を月内で均等に使う前提です。期間が登録されている特典は対象日だけ加算します。対象となる提示ポイントを含め、1ポイント＝1円相当で試算します。感謝デーなど特定の日だけの割引は含めていません。月・年の上限は登録店全体で共有し、利用明細ごとの端数は概算です。</p>';
 }
 
-function rank(store, wallet=activeMethods(), date=dateJST()){
-  const scenario = scenarioOf(store);
+function rank(store, wallet=activeMethods(), date=dateJST(), typical=false){
+  const scenario = scenarioOf(store, typical);
   const list = [];
   const methods = [...wallet];
   // 現金に特典があるお店（例：オーケーの現金割引）では、登録していなくても現金を比較に入れる
@@ -609,9 +618,12 @@ function rank(store, wallet=activeMethods(), date=dateJST()){
     if (bestPc) how.push(`${bestPc.name}を提示`);
     const upto = special === undefined && rule && rule.max && !rule.override && rule.rate >= base ? {rate: rule.max + (rate - rule.rate) + pcAdd, label: rule.maxLabel||""} : null;
     const kind = unsure ? "unknown" : op?.relative ? "relative" : rule?.benefit==="discount" && special ? "discount" : "points";
-    const extra = (op?.rate ?? 0) + (ch?.rate ?? 0) + pcAdd;
+    // お店の割引日（イオンの感謝デーなど）：対象の払い方なら、ポイントとは別にレジで値引き
+    const disc = scenario?.discount?.methods?.includes(m.id) ? scenario.discount.rate : 0;
+    if (disc){ parts.push({t:`${scenario.discount.label} ${fmt(disc)}%引き`, cls:"boost"}); if (scenario.discount.how) how.push(scenario.discount.how); }
+    const extra = (op?.rate ?? 0) + (ch?.rate ?? 0) + pcAdd + disc;
     const cap = !rule?.override && m.cap && payRate > (m.cap.after_by_store?.[store?.id] ?? m.cap.after_rate) ? m.cap : null;
-    list.push({m, rate:payRate+extra, payRate, extra, parts, notes, unsure, how, upto, kind, defaultPayRate, variantRates,
+    list.push({m, rate:payRate+extra, payRate, extra, disc, parts, notes, unsure, how, upto, kind, defaultPayRate, variantRates,
       cap, afterRate:cap ? (cap.after_by_store?.[store?.id] ?? cap.after_rate)+extra : payRate+extra,
       src:(ch?.card && m.charge_rates?.[ch.card.id]?.src) || rule?.src || m.src, charger:ch?.card});
 
@@ -633,7 +645,9 @@ function rateLabel(r){
 function amountLabel(r, amt){
   if (!amt || r.unsure || r.kind==="relative") return "";
   const n = Math.floor(amt*r.rate/100).toLocaleString();
-  return r.kind==="discount" ? "約"+n+"円引き" : "約"+n+"pt";
+  if (r.kind==="discount") return "約"+n+"円引き";
+  if (r.disc) return "約"+Math.floor(amt*r.disc/100).toLocaleString()+"円引き＋約"+Math.floor(amt*(r.rate-r.disc)/100).toLocaleString()+"pt";
+  return "約"+n+"pt";
 }
 function listHtml(ranking){
   const amt = Math.max(0, Number($("#amt").value)||0);
