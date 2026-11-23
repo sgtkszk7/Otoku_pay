@@ -154,6 +154,9 @@
   .empty{color:var(--muted);text-align:center;padding:18px 0;font-size:14px}
   footer{font-size:12px;color:var(--muted);margin-top:20px}
   header{margin-bottom:14px}
+  .update-bar{position:fixed;left:12px;right:12px;bottom:calc(76px + env(safe-area-inset-bottom));z-index:25;max-width:616px;margin:0 auto;display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--accent);border-radius:14px;padding:10px 12px;box-shadow:0 6px 20px rgba(0,0,0,.15);font-size:14px;font-weight:700;color:var(--accent)}
+  .update-bar span{flex:1}
+  .update-later{border:0;background:transparent;color:var(--muted);font:inherit;font-size:13px;cursor:pointer;padding:8px 4px}
   footer a{color:var(--muted)}
   .hidden{display:none}
   details summary{cursor:pointer;color:var(--accent);font-size:13px}
@@ -260,6 +263,8 @@ function loadData(d){
   RULES = d.rules.map(r=>({...r, m:r.method, s:r.store, max:r.rate_max, maxLabel:r.max_label}));
 }
 
+// 画面（index.html）を更新したら、この番号を変える。開いている画面より新しい版が公開されていたら「更新する」を出す
+const APP_VERSION = "2026-11-23.2";
 const KEY = "otoku-pay-v1", DEFAULT_SPEND = 3000;
 const blankState = () => ({methods:[], overrides:{}, pcs:[], favs:[], spend:{}, app:{}, charge:{}, usual:{}, pointPrio:[], scenario:{}, ai:{}});
 let state = blankState();
@@ -1162,6 +1167,32 @@ async function start(){
   }
 }
 start();
+
+/* ============ 新しい版のお知らせ ============ */
+// GitHub Pages はページを最大10分ほど端末に保存するため、公開中の版を直接確かめて、新しければ更新ボタンを出す
+let updateShown = false;
+async function checkUpdate(){
+  if (updateShown || !/(^|\.)github\.io$|^localhost$/.test(location.hostname)) return;
+  try {
+    const r = await fetch(location.pathname.replace(/[^/]*$/, "") + "index.html?check=" + Date.now(), {cache:"no-store"});
+    if (!r.ok) return;
+    const m = (await r.text()).match(/const APP_VERSION = "([^"]+)"/);
+    if (!m || m[1] === APP_VERSION) return;
+    updateShown = true;
+    const bar = document.createElement("div");
+    bar.className = "update-bar"; bar.setAttribute("role", "status");
+    bar.innerHTML = '<span>新しいバージョンがあります</span><button class="btn" id="update-go">更新する</button><button class="update-later" id="update-later" aria-label="あとで">あとで</button>';
+    document.body.appendChild(bar);
+    $("#update-go").addEventListener("click", ()=>{
+      // URLを変えて読み込むと、端末に保存された古い画面を使わずに最新版を取りに行く
+      location.replace(location.pathname + "?v=" + encodeURIComponent(m[1]) + location.hash);
+    });
+    $("#update-later").addEventListener("click", ()=>{ bar.remove(); });
+  } catch {}
+}
+checkUpdate();
+// ホーム画面のアプリは閉じずに残ることが多いので、画面に戻ってきたときにも確かめる
+document.addEventListener("visibilitychange", ()=>{ if (document.visibilityState === "visible") checkUpdate(); });
 function renderFavPicker(){ $("#favpick").innerHTML = storePickHtml("ジャンルから選んで追加"); }
 function renderChecked(d){ const el=$("#checked"); if(el && d.updated) el.textContent = `データ最終更新：${d.updated}`; }
 </script>
