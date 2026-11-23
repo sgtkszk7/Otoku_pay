@@ -93,13 +93,16 @@
   .method .grow{flex:1;min-width:0}
   .method .ov{width:84px;padding:6px 8px;font-size:14px;text-align:right}
   .group-title{font-size:12px;font-weight:700;color:var(--muted);margin:14px 0 4px;letter-spacing:.05em}
-  .btn{border:0;background:var(--accent);color:#fff;font:inherit;font-weight:500;padding:10px 16px;border-radius:10px;cursor:pointer}
+  .btn{border:0;background:var(--accent);color:#fff;font:inherit;font-weight:500;padding:10px 16px;border-radius:10px;cursor:pointer;white-space:nowrap;flex:none}
   @media (prefers-color-scheme: dark){ .btn{color:#0e1626} }
   .btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
-  .fav-store{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:1px solid var(--line);gap:10px}
+  .fav-store{padding:12px 0;border-top:1px solid var(--line)}
+  .fav-head{display:flex;align-items:center;gap:10px}
+  .usual{margin:8px 0 4px;padding:8px 10px;font-size:14px}
   .fav-store:first-child{border-top:0}
   .fav-best{font-size:13px;color:var(--muted)}
   .fav-best b{color:var(--gold)}
+  .fav-best + .fav-best{margin-top:2px}
   .x{border:0;background:transparent;color:var(--muted);font-size:18px;cursor:pointer;padding:4px 8px}
   .empty{color:var(--muted);text-align:center;padding:18px 0;font-size:14px}
   footer{font-size:12px;color:var(--muted);margin-top:20px}
@@ -151,7 +154,7 @@
   <section id="tab-fav" class="hidden">
     <div class="card">
       <h2>よく行くお店</h2>
-      <p class="note" style="margin-top:-4px">登録しておくと、お店ごとのベストな支払い方法がひと目でわかります。月にだいたい使う金額を入れると、もっとおトクな支払い方法がないか試算します。</p>
+      <p class="note" style="margin-top:-4px">登録しておくと、お店ごとのベストな支払い方法がひと目でわかります。月にだいたい使う金額と、いつもの払い方を入れると、今との差や、もっとおトクな支払い方法がないかを試算します。</p>
       <select id="favpick" class="store-pick" style="margin-top:10px" aria-label="ジャンルからお店を選んで追加"></select>
       <div class="row" style="margin-top:8px">
         <input id="favq" type="text" placeholder="または、お店の名前を入れて追加" list="storelist" autocomplete="off">
@@ -202,12 +205,13 @@ function loadData(d){
 
 /* ============ 保存 ============ */
 const KEY = "otoku-pay-v1";
-let state = {methods:[], overrides:{}, pcs:[], favs:[], spend:{}, app:{}, charge:{}};
+let state = {methods:[], overrides:{}, pcs:[], favs:[], spend:{}, app:{}, charge:{}, usual:{}};
 const DEFAULT_SPEND = 3000;
 try { const s = JSON.parse(localStorage.getItem(KEY)); if (s) state = Object.assign(state, s); } catch(e){}
 if (!state.spend) state.spend = {};
 if (!state.app) state.app = {};
 if (!state.charge) state.charge = {};
+if (!state.usual) state.usual = {};
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){} }
 
 /* ============ 検索 ============ */
@@ -332,7 +336,17 @@ function renderSuggest(){
   }
   const r = suggest();
   const yen = v => Math.round(v).toLocaleString();
-  html += `<div class="total">今の支払い方法で貯まる見込み：月 約${yen(r.curMonthly)}円分（年 約${yen(r.curMonthly*12)}円分）</div>`;
+  // いつもの払い方を選んだお店：おすすめに変えた場合の差
+  let switchGain = 0, switchCount = 0;
+  for (const s of r.favs){
+    const u = state.usual[s.id]; if (!u) continue;
+    const list = rank(s), top = list.find(x=>!x.unsure) || list[0], usual = list.find(x=>x.m.id===u);
+    if (top && usual && top.rate > usual.rate){ switchGain += spendOf(s.id)*(top.rate-usual.rate)/100; switchCount++; }
+  }
+  if (switchGain > 0){
+    html += `<div class="total" style="background:var(--gold-soft);color:var(--gold)">いつもの払い方を${switchCount}店でおすすめに変えるだけで、月 約${yen(switchGain)}円分（年 約${yen(switchGain*12)}円分）多く貯まる見込みです。</div>`;
+  }
+  html += `<div class="total">今持っている支払い方法を、お店ごとに一番得なものに使い分けた場合：月 約${yen(r.curMonthly)}円分（年 約${yen(r.curMonthly*12)}円分）</div>`;
   if (!r.out.length){
     html += `<div class="note">今の組み合わせで、よく行くお店ではほぼ最大の還元を受けられています。追加して大きく増える支払い方法は見つかりませんでした。</div>`;
   }
@@ -625,17 +639,39 @@ function renderMethods(){
   $("#pclist").innerHTML = POINT_CARDS.map(p=>`<div class="method"><input type="checkbox" data-pc="${p.id}" ${state.pcs.includes(p.id)?"checked":""}><div class="grow"><div class="mname">${esc(p.name)}</div></div></div>`).join("");
 }
 
+/* よく行くお店：いつもの払い方とおすすめを並べて表示 */
+const yenStr = v => Math.round(v).toLocaleString();
+function favLines(s){
+  const list = rank(s);
+  const top = list.find(r=>!r.unsure) || list[0];
+  if (!top) return `<div class="fav-best">使える支払い方法が登録されていません</div>`;
+  const spend = spendOf(s.id);
+  const usual = list.find(r=>r.m.id===state.usual[s.id]);
+  const topLine = (prefix) => `${prefix}：${esc(top.m.name)} <b>${fmt(top.rate)}%</b>（月 約${yenStr(spend*top.rate/100)}円分`;
+  if (!usual) return `<div class="fav-best">${topLine("おすすめ")}）</div>`;
+  const usualLine = `<div class="fav-best">いつもの払い方：${esc(usual.m.name)} ${fmt(usual.rate)}%（月 約${yenStr(spend*usual.rate/100)}円分）</div>`;
+  if (usual.m.id===top.m.id || usual.rate >= top.rate) return usualLine + `<div class="fav-best"><b>いつもの払い方がいちばんおトクです</b></div>`;
+  const diff = spend*(top.rate-usual.rate)/100;
+  return usualLine + `<div class="fav-best">${topLine("おすすめ")}・<b>+${yenStr(diff)}円</b>）</div>`;
+}
 function renderFavs(){
   $("#storelist").innerHTML = STORES.map(s=>`<option value="${esc(s.name)}">`).join("");
   if (!state.favs.length){ $("#favlist").innerHTML = `<div class="empty">まだ登録されていません。</div>`; renderSuggest(); return; }
   $("#favlist").innerHTML = state.favs.map(id=>{
     const s = STORES.find(x=>x.id===id); if (!s) return "";
-    const top = rank(s)[0];
+    const usable = rank(s);
+    const cur = state.usual[id] || "";
+    const opts = `<option value="">いつもの払い方を選ぶ</option>` + usable.map(r=>
+      `<option value="${r.m.id}" ${cur===r.m.id?"selected":""}>${esc(r.m.name)}</option>`).join("");
     return `<div class="fav-store">
-      <div style="cursor:pointer;flex:1" data-open="${esc(s.name)}"><div class="mname">${esc(s.name)}</div>
-      <div class="fav-best">${top?`おすすめ：${esc(top.m.name)} <b>${fmt(top.rate)}%</b>`:"使える支払い方法なし"}</div></div>
-      <label class="spend">月<input type="number" min="0" step="1000" data-spend="${id}" value="${spendOf(id)}" aria-label="${esc(s.name)}の月の利用額">円</label>
-      <button class="x" data-del="${id}" aria-label="削除">×</button></div>`;
+      <div class="fav-head">
+        <div class="mname" style="cursor:pointer;flex:1" data-open="${esc(s.name)}">${esc(s.name)}</div>
+        <label class="spend">月<input type="number" min="0" step="1000" data-spend="${id}" value="${spendOf(id)}" aria-label="${esc(s.name)}の月の利用額">円</label>
+        <button class="x" data-del="${id}" aria-label="${esc(s.name)}を削除">×</button>
+      </div>
+      <select class="store-pick usual" data-usual="${id}" aria-label="${esc(s.name)}でのいつもの払い方">${opts}</select>
+      <div id="fav-lines-${id}">${favLines(s)}</div>
+    </div>`;
   }).join("");
   renderSuggest();
 }
@@ -693,7 +729,19 @@ $("#favadd").addEventListener("click", addFav);
 $("#favq").addEventListener("keydown", e=>{ if(e.key==="Enter") addFav(); });
 $("#favlist").addEventListener("input", e=>{
   const id = e.target.dataset.spend;
-  if (id){ state.spend[id] = e.target.value; save(); renderSuggest(); }
+  if (id){
+    state.spend[id] = e.target.value; save(); renderSuggest();
+    // 入力中にフォーカスが外れないよう、その行の表示だけ更新
+    const s = STORES.find(x=>x.id===id), box = document.getElementById(`fav-lines-${id}`);
+    if (s && box) box.innerHTML = favLines(s);
+  }
+});
+$("#favlist").addEventListener("change", e=>{
+  const id = e.target.dataset.usual;
+  if (id !== undefined){
+    if (e.target.value) state.usual[id] = e.target.value; else delete state.usual[id];
+    save(); renderFavs();
+  }
 });
 $("#favlist").addEventListener("click", e=>{
   if (e.target.dataset.del){ state.favs = state.favs.filter(x=>x!==e.target.dataset.del); save(); renderFavs(); return; }
