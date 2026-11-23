@@ -179,7 +179,7 @@
 
   <footer>
     <span id="checked"></span><br>還元率は公式サイト等を確認した目安です。対象店舗・条件・上限・キャンペーンは頻繁に変わるため、実際の還元は各社の公式情報でご確認ください。<br>
-    プロトタイプ版（主要チェーン34店・決済16種のサンプルデータ）
+    プロトタイプ版（主要チェーン34店・決済20種のサンプルデータ）
   </footer>
 </div>
 
@@ -200,7 +200,7 @@ function loadData(d){
   STORES = d.stores; NOT_AVAILABLE = d.not_available || {}; LOOKUP_URL = d.lookup_endpoint || "";
   // AI検索の窓口は GitHub Pages 版からだけ呼べる（他の場所では呼び出しが許可されない）
   if (!/(^|\.)github\.io$|^localhost$/.test(location.hostname)) LOOKUP_URL = "";
-  RULES = d.rules.map(r=>({m:r.method, s:r.store, rate:r.rate, label:r.label, note:r.note, variants:r.variants}));
+  RULES = d.rules.map(r=>({m:r.method, s:r.store, rate:r.rate, label:r.label, note:r.note, variants:r.variants, override:!!r.override}));
 }
 
 /* ============ 保存 ============ */
@@ -293,7 +293,8 @@ function methodRate(m, store){
   const rule = store && RULES.find(r=>r.m===m.id && r.s===store.id);
   const op = ownPoint(m, store);
   const ch = chargeSource(m);
-  return (rule && rule.rate > base ? rule.rate : base) + (op ? op.rate : 0) + (ch ? ch.rate : 0);
+  const r0 = rule ? (rule.override ? rule.rate : Math.max(rule.rate, base)) : base;
+  return r0 + (op ? op.rate : 0) + (ch ? ch.rate : 0);
 }
 
 /* ============ 見直しの試算 ============ */
@@ -379,7 +380,8 @@ function rank(store){
     let rate = base, parts = m.charge ? [] : [{t:`基本 ${fmt(base)}%`}], notes = [];
     const rule = store && RULES.find(r=>r.m===m.id && r.s===store.id);
     if (rule){
-      if (rule.rate > base){ parts = [{t:`${rule.label} ${fmt(rule.rate)}%`, cls:"boost"}]; rate = rule.rate; }
+      if (rule.override){ parts = [{t:rule.label, cls:"warn"}]; rate = rule.rate; }
+      else if (rule.rate > base){ parts = [{t:`${rule.label} ${fmt(rule.rate)}%`, cls:"boost"}]; rate = rule.rate; }
       else parts.push({t:rule.label, cls:"boost"});
       if (rule.note) notes.push(rule.note);
     }
@@ -644,11 +646,15 @@ function renderMethods(){
 function usualOptions(s, list){
   const out = [];
   for (const r of list){
-    const rule = RULES.find(x=>x.m===r.m.id && x.s===s.id && x.variants);
-    if (rule && r.m.variants){
+    const storeRule = RULES.find(x=>x.m===r.m.id && x.s===s.id);
+    // お店の特典に払い方別の率がある場合（三井住友の対象店など）、またはカード自体が払い方で率が変わる場合（セゾンパールなど）
+    const vrates = storeRule && storeRule.variants ? storeRule.variants
+                 : (!storeRule || !storeRule.override) && r.m.variant_rates ? r.m.variant_rates : null;
+    const headRate = storeRule && storeRule.variants ? storeRule.rate : baseOf(r.m);
+    if (vrates && r.m.variants){
       for (const v of r.m.variants){
-        const vr = v.id in rule.variants ? rule.variants[v.id] : null;
-        const rate = vr===null ? r.rate : r.rate - rule.rate + vr;
+        const vr = v.id in vrates ? vrates[v.id] : null;
+        const rate = vr===null ? r.rate : r.rate - headRate + vr;
         out.push({value:`${r.m.id}:${v.id}`, label:`${r.m.name}（${v.label}）`, rate, row:r});
       }
     } else {
@@ -658,10 +664,12 @@ function usualOptions(s, list){
   return out;
 }
 function usualOf(s, list){
-  const v = state.usual[s.id]; if (!v) return null;
+  let v = state.usual[s.id]; if (!v) return null;
+  // 以前の保存値：「カードのタッチ決済」「差し込み・iD」は「カードのタッチ・差し込み・iD」にまとめた
+  v = v.replace(/:(card_touch|insert)$/, ":card");
   const opts = usualOptions(s, list);
-  // 以前の保存値（払い方の指定なし）は、そのカードの最初の払い方として扱う
-  return opts.find(o=>o.value===v) || opts.find(o=>o.value.split(":")[0]===v) || null;
+  // 払い方の指定がない保存値などは、そのカードの最初の払い方として扱う
+  return opts.find(o=>o.value===v) || opts.find(o=>o.value.split(":")[0]===v.split(":")[0]) || null;
 }
 const yenStr = v => Math.round(v).toLocaleString();
 function favLines(s){

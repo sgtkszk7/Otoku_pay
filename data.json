@@ -11,8 +11,8 @@
       "group": "クレジットカード",
       "base": 0.5,
       "point": "Vポイント",
-      "note": "7%還元はスマホのVisa/Mastercardタッチ決済のみ。カード現物のタッチ・iD・差し込みは対象外。",
-      "src": "https://www.smbc-card.com/camp/article_numberless/index_a.jsp",
+      "note": "7%還元はスマホのVisa/Mastercardタッチ決済かモバイルオーダーのみ。カード現物のタッチ決済・iD・差し込み・磁気は対象外。2027年2月1日利用分から、コンビニでのたばこ購入分は特典の対象外。",
+      "src": "https://www.smbc-card.com/mem/cardinfo/23/cardinfo9001629.jsp",
       "official_domains": [
         "smbc-card.com"
       ],
@@ -23,14 +23,59 @@
           "label": "スマホのタッチ決済"
         },
         {
-          "id": "card_touch",
-          "label": "カードのタッチ決済"
-        },
-        {
-          "id": "insert",
-          "label": "差し込み・iD"
+          "id": "card",
+          "label": "カードのタッチ・差し込み・iD"
         }
       ]
+    },
+    {
+      "id": "smbc_gold_nl",
+      "name": "三井住友カード ゴールド(NL)",
+      "kind": "クレカ（スマホのタッチ決済）",
+      "group": "クレジットカード",
+      "base": 0.5,
+      "point": "Vポイント",
+      "variants": [
+        {
+          "id": "phone",
+          "label": "スマホのタッチ決済"
+        },
+        {
+          "id": "card",
+          "label": "カードのタッチ・差し込み・iD"
+        }
+      ],
+      "note": "7%還元はスマホのVisa/Mastercardタッチ決済かモバイルオーダーのみ。カード現物のタッチ決済・iD・差し込み・磁気は対象外。2027年2月1日利用分から、コンビニでのたばこ購入分は特典の対象外。 年会費5,500円（年間100万円の利用で翌年以降永年無料）。",
+      "src": "https://www.smbc-card.com/mem/cardinfo/23/cardinfo9001629.jsp",
+      "official_domains": [
+        "smbc-card.com"
+      ],
+      "annual_fee_yen": 5500
+    },
+    {
+      "id": "olive",
+      "name": "Olive（クレジットモード）",
+      "kind": "クレカ（スマホのタッチ決済）",
+      "group": "クレジットカード",
+      "base": 0.5,
+      "point": "Vポイント",
+      "variants": [
+        {
+          "id": "phone",
+          "label": "スマホのタッチ決済"
+        },
+        {
+          "id": "card",
+          "label": "カードのタッチ・差し込み・iD"
+        }
+      ],
+      "note": "対象のコンビニ・飲食店で、Oliveフレキシブルペイのクレジットモードをスマホのタッチ決済で使うと8%。カード現物のタッチ決済・iD・差し込みは対象外。",
+      "src": "https://www.smbc-card.com/mem/cardinfo/23/cardinfo9001629.jsp",
+      "official_domains": [
+        "smbc-card.com",
+        "smbc.co.jp"
+      ],
+      "annual_fee_yen": 0
     },
     {
       "id": "rakuten_card",
@@ -98,6 +143,34 @@
       "official_domains": [
         "paypay-card.co.jp",
         "paypay.ne.jp"
+      ],
+      "annual_fee_yen": 0
+    },
+    {
+      "id": "saison_pearl",
+      "name": "セゾンパール・アメックス",
+      "kind": "クレカ（スマホのQUICPay）",
+      "group": "クレジットカード",
+      "base": 2.0,
+      "point": "永久不滅ポイント",
+      "variants": [
+        {
+          "id": "quicpay",
+          "label": "スマホのQUICPay（Apple Pay・Google Pay）"
+        },
+        {
+          "id": "card",
+          "label": "カード払い"
+        }
+      ],
+      "variant_rates": {
+        "card": 0.5
+      },
+      "monthly_cap_yen": 25000,
+      "note": "Apple Pay・Google PayのQUICPayで払うと2%（年間30万円の利用分まで。以降0.5%）。カード払いは0.5%。永久不滅ポイントを1ポイント5円相当の商品に交換した場合の率。年会費は初年度無料、2年目以降1,100円（年1回の利用で無料）。",
+      "src": "https://www.saisoncard.co.jp/amex/lifestyle/pearl/",
+      "official_domains": [
+        "saisoncard.co.jp"
       ],
       "annual_fee_yen": 0
     },
@@ -759,8 +832,7 @@
       "label": "対象店でスマホタッチ7%",
       "note": "セブン-イレブンアプリ提示などの条件で最大10%。",
       "variants": {
-        "card_touch": 1.5,
-        "insert": 0.5
+        "card": 0.5
       }
     },
     {
@@ -770,19 +842,7 @@
       "label": "対象店でスマホタッチ7%",
       "note": "商業施設内の店舗など一部対象外あり。",
       "variants": {
-        "card_touch": 1.5,
-        "insert": 0.5
-      }
-    },
-    {
-      "method": "smbc_nl",
-      "store": "famima",
-      "rate": 7,
-      "label": "対象店でスマホタッチ7%",
-      "note": "商業施設内の店舗など一部対象外あり。",
-      "variants": {
-        "card_touch": 1.5,
-        "insert": 0.5
+        "card": 0.5
       }
     },
     {
@@ -792,8 +852,7 @@
       "label": "対象店でスマホタッチ7%",
       "note": "商業施設内の店舗など一部対象外あり。",
       "variants": {
-        "card_touch": 1.5,
-        "insert": 0.5
+        "card": 0.5
       }
     },
     {
@@ -803,8 +862,7 @@
       "label": "対象店でスマホタッチ7%",
       "note": "商業施設内の店舗など一部対象外あり。",
       "variants": {
-        "card_touch": 1.5,
-        "insert": 0.5
+        "card": 0.5
       }
     },
     {
@@ -814,8 +872,7 @@
       "label": "対象店でスマホタッチ7%",
       "note": "商業施設内の店舗など一部対象外あり。",
       "variants": {
-        "card_touch": 1.5,
-        "insert": 0.5
+        "card": 0.5
       }
     },
     {
@@ -825,8 +882,7 @@
       "label": "対象店でスマホタッチ7%",
       "note": "商業施設内の店舗など一部対象外あり。",
       "variants": {
-        "card_touch": 1.5,
-        "insert": 0.5
+        "card": 0.5
       }
     },
     {
@@ -836,8 +892,7 @@
       "label": "対象店でスマホタッチ7%",
       "note": "商業施設内の店舗など一部対象外あり。",
       "variants": {
-        "card_touch": 1.5,
-        "insert": 0.5
+        "card": 0.5
       }
     },
     {
@@ -847,8 +902,7 @@
       "label": "対象店でスマホタッチ7%",
       "note": "商業施設内の店舗など一部対象外あり。",
       "variants": {
-        "card_touch": 1.5,
-        "insert": 0.5
+        "card": 0.5
       }
     },
     {
@@ -858,8 +912,7 @@
       "label": "対象店でスマホタッチ7%",
       "note": "商業施設内の店舗など一部対象外あり。",
       "variants": {
-        "card_touch": 1.5,
-        "insert": 0.5
+        "card": 0.5
       }
     },
     {
@@ -1092,8 +1145,7 @@
       "label": "対象店でスマホタッチ7%",
       "note": "商業施設内の店舗など一部対象外あり。カード現物のタッチ・iD・差し込みは対象外。",
       "variants": {
-        "card_touch": 1.5,
-        "insert": 0.5
+        "card": 0.5
       }
     },
     {
@@ -1103,8 +1155,7 @@
       "label": "対象店でスマホタッチ7%",
       "note": "商業施設内の店舗など一部対象外あり。カード現物のタッチ・iD・差し込みは対象外。",
       "variants": {
-        "card_touch": 1.5,
-        "insert": 0.5
+        "card": 0.5
       }
     },
     {
@@ -1162,6 +1213,295 @@
       "rate": 1.0,
       "label": "一部店舗のみ",
       "note": "松屋の券売機でクレジットカードが使えるのは一部店舗のみ（モバイルオーダーなら利用可）。"
+    },
+    {
+      "method": "smbc_gold_nl",
+      "store": "seven",
+      "rate": 7.0,
+      "label": "対象店でスマホタッチ7%",
+      "note": "セブン-イレブンアプリ提示などの条件で最大10%。",
+      "variants": {
+        "card": 0.5
+      }
+    },
+    {
+      "method": "olive",
+      "store": "seven",
+      "rate": 8.0,
+      "label": "対象店でスマホタッチ8%",
+      "note": "セブン-イレブンアプリ提示などの条件で最大10%。",
+      "variants": {
+        "card": 0.5
+      }
+    },
+    {
+      "method": "smbc_gold_nl",
+      "store": "lawson",
+      "rate": 7.0,
+      "label": "対象店でスマホタッチ7%",
+      "note": "商業施設内の店舗など一部対象外あり。",
+      "variants": {
+        "card": 0.5
+      }
+    },
+    {
+      "method": "olive",
+      "store": "lawson",
+      "rate": 8.0,
+      "label": "対象店でスマホタッチ8%",
+      "note": "商業施設内の店舗など一部対象外あり。",
+      "variants": {
+        "card": 0.5
+      }
+    },
+    {
+      "method": "smbc_gold_nl",
+      "store": "mcd",
+      "rate": 7.0,
+      "label": "対象店でスマホタッチ7%",
+      "note": "商業施設内の店舗など一部対象外あり。",
+      "variants": {
+        "card": 0.5
+      }
+    },
+    {
+      "method": "olive",
+      "store": "mcd",
+      "rate": 8.0,
+      "label": "対象店でスマホタッチ8%",
+      "note": "商業施設内の店舗など一部対象外あり。",
+      "variants": {
+        "card": 0.5
+      }
+    },
+    {
+      "method": "smbc_gold_nl",
+      "store": "sukiya",
+      "rate": 7.0,
+      "label": "対象店でスマホタッチ7%",
+      "note": "商業施設内の店舗など一部対象外あり。",
+      "variants": {
+        "card": 0.5
+      }
+    },
+    {
+      "method": "olive",
+      "store": "sukiya",
+      "rate": 8.0,
+      "label": "対象店でスマホタッチ8%",
+      "note": "商業施設内の店舗など一部対象外あり。",
+      "variants": {
+        "card": 0.5
+      }
+    },
+    {
+      "method": "smbc_gold_nl",
+      "store": "gusto",
+      "rate": 7.0,
+      "label": "対象店でスマホタッチ7%",
+      "note": "商業施設内の店舗など一部対象外あり。",
+      "variants": {
+        "card": 0.5
+      }
+    },
+    {
+      "method": "olive",
+      "store": "gusto",
+      "rate": 8.0,
+      "label": "対象店でスマホタッチ8%",
+      "note": "商業施設内の店舗など一部対象外あり。",
+      "variants": {
+        "card": 0.5
+      }
+    },
+    {
+      "method": "smbc_gold_nl",
+      "store": "saizeriya",
+      "rate": 7.0,
+      "label": "対象店でスマホタッチ7%",
+      "note": "商業施設内の店舗など一部対象外あり。",
+      "variants": {
+        "card": 0.5
+      }
+    },
+    {
+      "method": "olive",
+      "store": "saizeriya",
+      "rate": 8.0,
+      "label": "対象店でスマホタッチ8%",
+      "note": "商業施設内の店舗など一部対象外あり。",
+      "variants": {
+        "card": 0.5
+      }
+    },
+    {
+      "method": "smbc_gold_nl",
+      "store": "doutor",
+      "rate": 7.0,
+      "label": "対象店でスマホタッチ7%",
+      "note": "商業施設内の店舗など一部対象外あり。",
+      "variants": {
+        "card": 0.5
+      }
+    },
+    {
+      "method": "olive",
+      "store": "doutor",
+      "rate": 8.0,
+      "label": "対象店でスマホタッチ8%",
+      "note": "商業施設内の店舗など一部対象外あり。",
+      "variants": {
+        "card": 0.5
+      }
+    },
+    {
+      "method": "smbc_gold_nl",
+      "store": "kfc",
+      "rate": 7.0,
+      "label": "対象店でスマホタッチ7%",
+      "note": "商業施設内の店舗など一部対象外あり。",
+      "variants": {
+        "card": 0.5
+      }
+    },
+    {
+      "method": "olive",
+      "store": "kfc",
+      "rate": 8.0,
+      "label": "対象店でスマホタッチ8%",
+      "note": "商業施設内の店舗など一部対象外あり。",
+      "variants": {
+        "card": 0.5
+      }
+    },
+    {
+      "method": "smbc_gold_nl",
+      "store": "mos",
+      "rate": 7.0,
+      "label": "対象店でスマホタッチ7%",
+      "note": "商業施設内の店舗など一部対象外あり。",
+      "variants": {
+        "card": 0.5
+      }
+    },
+    {
+      "method": "olive",
+      "store": "mos",
+      "rate": 8.0,
+      "label": "対象店でスマホタッチ8%",
+      "note": "商業施設内の店舗など一部対象外あり。",
+      "variants": {
+        "card": 0.5
+      }
+    },
+    {
+      "method": "smbc_gold_nl",
+      "store": "yoshinoya",
+      "rate": 7.0,
+      "label": "対象店でスマホタッチ7%",
+      "note": "商業施設内の店舗など一部対象外あり。カード現物のタッチ・iD・差し込みは対象外。",
+      "variants": {
+        "card": 0.5
+      }
+    },
+    {
+      "method": "olive",
+      "store": "yoshinoya",
+      "rate": 8.0,
+      "label": "対象店でスマホタッチ8%",
+      "note": "商業施設内の店舗など一部対象外あり。カード現物のタッチ・iD・差し込みは対象外。",
+      "variants": {
+        "card": 0.5
+      }
+    },
+    {
+      "method": "smbc_gold_nl",
+      "store": "jonathan",
+      "rate": 7.0,
+      "label": "対象店でスマホタッチ7%",
+      "note": "商業施設内の店舗など一部対象外あり。カード現物のタッチ・iD・差し込みは対象外。",
+      "variants": {
+        "card": 0.5
+      }
+    },
+    {
+      "method": "olive",
+      "store": "jonathan",
+      "rate": 8.0,
+      "label": "対象店でスマホタッチ8%",
+      "note": "商業施設内の店舗など一部対象外あり。カード現物のタッチ・iD・差し込みは対象外。",
+      "variants": {
+        "card": 0.5
+      }
+    },
+    {
+      "method": "smbc_nl",
+      "store": "starbucks",
+      "rate": 0.5,
+      "label": "モバイルオーダーなら7%",
+      "note": "スターバックスは、アプリ経由のApple Payでのモバイルオーダーのみ対象（店頭払いとスタバカードへのチャージは対象外）。"
+    },
+    {
+      "method": "smbc_gold_nl",
+      "store": "starbucks",
+      "rate": 0.5,
+      "label": "モバイルオーダーなら7%",
+      "note": "スターバックスは、アプリ経由のApple Payでのモバイルオーダーのみ対象（店頭払いとスタバカードへのチャージは対象外）。"
+    },
+    {
+      "method": "olive",
+      "store": "starbucks",
+      "rate": 0.5,
+      "label": "モバイルオーダーなら7%",
+      "note": "スターバックスは、アプリ経由のApple Payでのモバイルオーダーのみ対象（店頭払いとスタバカードへのチャージは対象外）。"
+    },
+    {
+      "method": "saison_pearl",
+      "store": "seiyu",
+      "rate": 0.5,
+      "override": true,
+      "label": "QUICPay不可（カード払い0.5%）",
+      "note": "西友はQUICPayが使えません。"
+    },
+    {
+      "method": "saison_pearl",
+      "store": "kohnan",
+      "rate": 0.5,
+      "override": true,
+      "label": "QUICPay不可（カード払い0.5%）",
+      "note": "コーナンはQUICPayが使えません。"
+    },
+    {
+      "method": "saison_pearl",
+      "store": "saizeriya",
+      "rate": 0.5,
+      "override": true,
+      "label": "QUICPay不可（カード払い0.5%）",
+      "note": "サイゼリヤはQUICPayが使えません。"
+    },
+    {
+      "method": "saison_pearl",
+      "store": "amazon",
+      "rate": 0.5,
+      "override": true,
+      "label": "QUICPay不可（カード払い0.5%）",
+      "note": "ネット通販ではQUICPayが使えません。"
+    },
+    {
+      "method": "saison_pearl",
+      "store": "rakuten_ichiba",
+      "rate": 0.5,
+      "override": true,
+      "label": "QUICPay不可（カード払い0.5%）",
+      "note": "ネット通販ではQUICPayが使えません。"
+    },
+    {
+      "method": "saison_pearl",
+      "store": "yahoo",
+      "rate": 0.5,
+      "override": true,
+      "label": "QUICPay不可（カード払い0.5%）",
+      "note": "ネット通販ではQUICPayが使えません。"
     }
   ],
   "not_available": {
