@@ -61,6 +61,7 @@
   @media (prefers-color-scheme: dark){ .seg button.on{color:#0b1416} }
   @media (prefers-color-scheme: dark){ .bd span.own{background:#2a2340;color:#c3b2ee} }
   .hint{font-size:12px;color:var(--muted);margin:6px 2px 0}
+  .store-pick{width:100%;font:inherit;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);appearance:auto}
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:20px;z-index:10}
   .modal.hidden{display:none}
   .modal-box{background:var(--card);border-radius:var(--radius);padding:20px;max-width:400px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,.2)}
@@ -117,7 +118,9 @@
   <!-- 店名検索 -->
   <section id="tab-search">
     <div class="card">
-      <p class="label">お店の名前</p>
+      <p class="label">ジャンルから選ぶ</p>
+      <select id="pick" class="store-pick" aria-label="ジャンルからお店を選ぶ"></select>
+      <p class="label" style="margin-top:12px">または、お店の名前を入力</p>
       <div class="row">
         <input id="q" type="text" placeholder="例：セブン、マック、スタバ" autocomplete="off">
       </div>
@@ -136,8 +139,9 @@
     <div class="card">
       <h2>よく行くお店</h2>
       <p class="note" style="margin-top:-4px">登録しておくと、お店ごとのベストな支払い方法がひと目でわかります。月にだいたい使う金額を入れると、もっとおトクな支払い方法がないか試算します。</p>
-      <div class="row" style="margin-top:10px">
-        <input id="favq" type="text" placeholder="お店の名前を入れて追加" list="storelist" autocomplete="off">
+      <select id="favpick" class="store-pick" style="margin-top:10px" aria-label="ジャンルからお店を選んで追加"></select>
+      <div class="row" style="margin-top:8px">
+        <input id="favq" type="text" placeholder="または、お店の名前を入れて追加" list="storelist" autocomplete="off">
         <button class="btn" id="favadd">追加</button>
       </div>
       <datalist id="storelist"></datalist>
@@ -506,6 +510,26 @@ function doSearch(){
   renderRanking(findStore(q), q);
 }
 
+/* ============ ジャンル別のプルダウン ============ */
+const CAT_ORDER = ["コンビニ","スーパー","ドラッグストア","飲食","カフェ","家電","ホームセンター","生活雑貨","衣料品","ネット通販"];
+function storePickHtml(placeholder){
+  const cats = [...new Set(STORES.map(s=>s.cat))]
+    .sort((a,b)=>((CAT_ORDER.indexOf(a)+1)||99) - ((CAT_ORDER.indexOf(b)+1)||99));
+  return `<option value="">${esc(placeholder)}</option>` + cats.map(c=>
+    `<optgroup label="${esc(c)}">${STORES.filter(s=>s.cat===c)
+      .sort((a,b)=>a.name.localeCompare(b.name,"ja"))
+      .map(s=>`<option value="${esc(s.id)}">${esc(s.name)}</option>`).join("")}</optgroup>`).join("");
+}
+function renderPickers(){
+  $("#pick").innerHTML = storePickHtml(`お店を選ぶ（${STORES.length}店）`);
+  $("#favpick").innerHTML = storePickHtml("ジャンルから選んで追加");
+}
+function syncPick(){
+  // 表示しているお店をプルダウンにも反映（リストにないお店なら未選択に戻す）
+  const st = findStore($("#q").value.trim());
+  $("#pick").value = st ? st.id : "";
+}
+
 function renderQuick(){
   const ids = state.favs.length ? state.favs : ["seven","lawson","famima","mcd","starbucks","aeon"];
   $("#quick").innerHTML = ids.map(id=>STORES.find(s=>s.id===id)).filter(Boolean)
@@ -554,14 +578,23 @@ function showTab(t){
   if (t==="fav") renderFavs();
   if (t==="search"){ renderQuick(); doSearch(); }
 }
-$("#q").addEventListener("input", doSearch);
+$("#q").addEventListener("input", ()=>{ syncPick(); doSearch(); });
+$("#pick").addEventListener("change", e=>{
+  const st = STORES.find(s=>s.id===e.target.value); if (!st) return;
+  $("#q").value = st.name; doSearch();
+});
+$("#favpick").addEventListener("change", e=>{
+  const id = e.target.value; if (!id) return;
+  if (!state.favs.includes(id)) state.favs.push(id);
+  e.target.value = ""; save(); renderFavs();
+});
 $("#amt").addEventListener("input", doSearch);
 $("#result").addEventListener("click", e=>{
   const ds = e.target.dataset || {};
   if (ds.ai) lookupAI(ds.ai);
   if (ds.app){ state.app[ds.app] = ds.v==="1"; save(); doSearch(); }
 });
-$("#quick").addEventListener("click", e=>{ const q=e.target.dataset.q; if(q){ $("#q").value=q; doSearch(); }});
+$("#quick").addEventListener("click", e=>{ const q=e.target.dataset.q; if(q){ $("#q").value=q; syncPick(); doSearch(); }});
 $("#methodlist").addEventListener("change", e=>{
   const id = e.target.dataset.m;
   if (id){ state.methods = e.target.checked ? [...new Set([...state.methods,id])] : state.methods.filter(x=>x!==id); save(); }
@@ -589,12 +622,12 @@ $("#favlist").addEventListener("input", e=>{
 $("#favlist").addEventListener("click", e=>{
   if (e.target.dataset.del){ state.favs = state.favs.filter(x=>x!==e.target.dataset.del); save(); renderFavs(); return; }
   const o = e.target.closest("[data-open]");
-  if (o){ $("#q").value = o.dataset.open; showTab("search"); }
+  if (o){ $("#q").value = o.dataset.open; syncPick(); showTab("search"); }
 });
 
 fetch("data.json", {cache:"no-cache"})
   .then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); })
-  .then(d=>{ loadData(d); renderMethods(); renderQuick(); doSearch(); renderChecked(d); })
+  .then(d=>{ loadData(d); renderPickers(); renderMethods(); renderQuick(); doSearch(); renderChecked(d); })
   .catch(()=>{ $("#result").innerHTML = `<div class="banner">還元率データ（data.json）を読み込めませんでした。時間をおいて再読み込みしてください。</div>`; });
 function renderChecked(d){ const el=$("#checked"); if(el && d.updated) el.textContent = `データ最終更新：${d.updated}`; }
 </script>
