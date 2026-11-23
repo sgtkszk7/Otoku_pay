@@ -659,9 +659,11 @@ function storeDetailHtml(s){
   const usual = state.usual[s.id] ? `<div class="usual-box">${favLines(s)}</div>` : "";
   return `${ownNote}${appSel}${usual}${listHtml(rank(s))}`;
 }
-function rowHtml(s){
+// ctx：どの一覧の行か（fav＝よく行くお店、q＝検索結果、cat＝ジャンル別）。同じお店が2か所にあっても、押した方だけ開く
+function rowHtml(s, ctx="cat"){
+  const key = `${ctx}:${s.id}`;
   const list = rank(s), top = bestOf(list);
-  const fav = state.favs.includes(s.id), open = openIds.has(s.id);
+  const fav = state.favs.includes(s.id), open = openIds.has(key);
   // 条件が1行（how）で書けているお店は従来どおり。条件が一覧に出ないお店だけ「詳細 ›」で目立たせる
   const needDetail = !!(top && top.notes && top.notes.length && !(top.how && top.how.length));
   let gain = "";
@@ -669,10 +671,10 @@ function rowHtml(s){
   if (u && top && top.rate > u.rate){
     gain = `<span class="srow-gain">いつもの払い方より月 +${yenStr(spendOf(s.id)*(top.rate-u.rate)/100)}円</span>`;
   }
-  return `<div class="srow ${open?"open":""}" id="row-${s.id}">
+  return `<div class="srow ${open?"open":""}" id="${ctx==="cat"?`row-${s.id}`:`row-${ctx}-${s.id}`}">
     <div class="srow-head">
       <button class="star ${fav?"on":""}" data-star="${s.id}" aria-pressed="${fav}" aria-label="${esc(s.name)}をよく行くお店にする">${fav?"★":"☆"}</button>
-      <button class="srow-main" data-toggle="${s.id}" aria-expanded="${open}">
+      <button class="srow-main" data-toggle="${key}" aria-expanded="${open}">
         <span class="mname">${esc(s.name)}</span>
         <span class="srow-best">${!top ? "使える支払い方法が登録されていません"
           : s.own_points && s.own_points.relative ? `1位 ${esc(top.m.name)}（ポイント率は商品ごと）`
@@ -682,8 +684,8 @@ function rowHtml(s){
         ${needDetail && !open ? `<span class="srow-cond">ⓘ 条件あり</span>` : ""}
       </button>
       ${needDetail
-        ? `<button class="more" data-toggle="${s.id}" tabindex="-1" aria-hidden="true">${open?"閉じる":"詳細"}<span class="chev">›</span></button>`
-        : `<button class="chev-btn" data-toggle="${s.id}" tabindex="-1" aria-hidden="true"><span class="chev">›</span></button>`}
+        ? `<button class="more" data-toggle="${key}" tabindex="-1" aria-hidden="true">${open?"閉じる":"詳細"}<span class="chev">›</span></button>`
+        : `<button class="chev-btn" data-toggle="${key}" tabindex="-1" aria-hidden="true"><span class="chev">›</span></button>`}
     </div>
     ${open ? `<div class="srow-detail">${storeDetailHtml(s)}</div>` : ""}
   </div>`;
@@ -697,8 +699,8 @@ function renderList(){
     const hits = matchStores(q);
     if (!hits.length){ $("#storeList").innerHTML = ""; renderUnknown(q); return; }
     $("#result").innerHTML = "";
-    if (hits.length === 1) openIds.add(hits[0].id);
-    html += `<div class="card section"><h2>「${esc(q)}」に一致するお店</h2>${hits.map(rowHtml).join("")}</div>`;
+    if (hits.length === 1) openIds.add(`q:${hits[0].id}`);
+    html += `<div class="card section"><h2>「${esc(q)}」に一致するお店</h2>${hits.map(x=>rowHtml(x,"q")).join("")}</div>`;
     $("#storeList").innerHTML = html;
     return;
   }
@@ -711,13 +713,13 @@ function renderList(){
   jump.innerHTML = (favs.length ? `<button class="fav${on("sec-fav")}" data-jump="sec-fav">★ よく行く</button>` : "")
     + cats.map((c,i)=>`<button class="${on(`sec-${i}`).trim()}" data-jump="sec-${i}">${esc(c)}</button>`).join("");
   if (favs.length){
-    html += `<div class="card section" id="sec-fav"><h2 class="fav">★ よく行くお店</h2>${favs.map(rowHtml).join("")}</div>`;
+    html += `<div class="card section" id="sec-fav"><h2 class="fav">★ よく行くお店</h2>${favs.map(x=>rowHtml(x,"fav")).join("")}</div>`;
   } else {
     html += `<p class="note" style="margin:0 4px 10px">☆を押したお店は「よく行くお店」として一番上に表示されます。</p>`;
   }
   cats.forEach((c,i)=>{
     const list = STORES.filter(s=>s.cat===c).sort((a,b)=>a.name.localeCompare(b.name,"ja"));
-    html += `<div class="card section" id="sec-${i}"><h2>${esc(c)}</h2>${list.map(rowHtml).join("")}</div>`;
+    html += `<div class="card section" id="sec-${i}"><h2>${esc(c)}</h2>${list.map(x=>rowHtml(x,"cat")).join("")}</div>`;
   });
   $("#storeList").innerHTML = html;
 }
@@ -862,18 +864,29 @@ $("#favpick").addEventListener("change", e=>{
   e.target.value = ""; save(); renderFavs();
 });
 $("#amt").addEventListener("input", renderList);
+// 一覧を描き直しても、押したお店の行が画面の同じ位置に残るようにする
+function keepPlace(el, render){
+  const row = el.closest(".srow"), id = row && row.id;
+  const before = row ? row.getBoundingClientRect().top : null;
+  render();
+  const now = id && document.getElementById(id);
+  if (now && before !== null){
+    const d = now.getBoundingClientRect().top - before;
+    if (Math.abs(d) > 1) window.scrollBy(0, d);
+  }
+}
 $("#tab-list").addEventListener("click", e=>{
   const el = e.target.closest("button"); if (!el) return;
   const ds = el.dataset;
   if (ds.ai) lookupAI(ds.ai);
-  if (ds.app){ state.app[ds.app] = ds.v==="1"; save(); renderList(); }
+  if (ds.app){ state.app[ds.app] = ds.v==="1"; save(); keepPlace(el, renderList); }
   if (ds.star){
     state.favs = state.favs.includes(ds.star) ? state.favs.filter(x=>x!==ds.star) : [...state.favs, ds.star];
     save(); renderList();
   }
   if (ds.toggle){
     openIds.has(ds.toggle) ? openIds.delete(ds.toggle) : openIds.add(ds.toggle);
-    renderList();
+    keepPlace(el, renderList);
   }
   if (ds.jump){
     const sec = document.getElementById(ds.jump);
@@ -939,9 +952,9 @@ $("#favlist").addEventListener("click", e=>{
   if (o){
     // お店タブの、そのお店の行を開いて表示
     const st = STORES.find(x=>x.name===o.dataset.open);
-    $("#q").value = ""; if (st) openIds.add(st.id);
+    $("#q").value = ""; if (st) openIds.add(`fav:${st.id}`);
     showTab("list");
-    const row = st && document.getElementById(`row-${st.id}`);
+    const row = st && document.getElementById(`row-fav-${st.id}`);
     if (row) row.scrollIntoView({behavior:"smooth", block:"center"});
   }
 });
