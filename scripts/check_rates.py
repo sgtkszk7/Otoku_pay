@@ -113,6 +113,9 @@ effective_date（YYYY-MM-DDまたはnull）, conditions（無条件の標準率�
 source_url, evidence（変更・終了を直接示す公式本文の短い引用）を入れてください。"""
     result = extract_json(call_claude(prompt))
     if not isinstance(result, dict) or not isinstance(result.get("changes"), list):
+        # 返答の形が崩れることがあるので、1回だけ聞き直す
+        result = extract_json(call_claude(prompt + "\n\n必ず {\"changes\": [...]} の形のJSONオブジェクトだけを出力してください。"))
+    if not isinstance(result, dict) or not isinstance(result.get("changes"), list):
         raise ValueError("調査結果の変更一覧が欠けています")
     return result["changes"]
 

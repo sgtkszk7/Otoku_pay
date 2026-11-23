@@ -38,6 +38,14 @@ def is_official(url, domains):
         return False
 
 
+def _tls_context():
+    """証明書の検証はそのまま。古い方式の再ネゴシエーションだけを許可する
+    （dポイントの公式サイトなど、一部の公式サイトがこれを使っているため）。"""
+    ctx = ssl.create_default_context()
+    ctx.options |= getattr(ssl, "OP_LEGACY_SERVER_CONNECT", 0x4)
+    return ctx
+
+
 def fetch_page(url, domains):
     for _ in range(5):
         if not is_official(url, domains):
@@ -51,7 +59,7 @@ def fetch_page(url, domains):
         try:
             # Pin the checked address, while using the original host for TLS and Host.
             with socket.create_connection((str(ips[0]), 443), timeout=12) as sock:
-                conn.sock = ssl.create_default_context().wrap_socket(sock, server_hostname=u.hostname)
+                conn.sock = _tls_context().wrap_socket(sock, server_hostname=u.hostname)
                 conn.request("GET", urlunsplit(("", "", u.path or "/", u.query, "")),
                              headers={"User-Agent": "OtokuPay-RateChecker", "Accept-Encoding": "identity"})
                 resp = conn.getresponse()
