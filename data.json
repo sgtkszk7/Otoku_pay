@@ -16,7 +16,21 @@
       "official_domains": [
         "smbc-card.com"
       ],
-      "annual_fee_yen": 0
+      "annual_fee_yen": 0,
+      "variants": [
+        {
+          "id": "phone",
+          "label": "スマホのタッチ決済"
+        },
+        {
+          "id": "card_touch",
+          "label": "カードのタッチ決済"
+        },
+        {
+          "id": "insert",
+          "label": "差し込み・iD"
+        }
+      ]
     },
     {
       "id": "rakuten_card",
@@ -743,70 +757,110 @@
       "store": "seven",
       "rate": 7,
       "label": "対象店でスマホタッチ7%",
-      "note": "セブン-イレブンアプリ提示などの条件で最大10%。"
+      "note": "セブン-イレブンアプリ提示などの条件で最大10%。",
+      "variants": {
+        "card_touch": 1.5,
+        "insert": 0.5
+      }
     },
     {
       "method": "smbc_nl",
       "store": "lawson",
       "rate": 7,
       "label": "対象店でスマホタッチ7%",
-      "note": "商業施設内の店舗など一部対象外あり。"
+      "note": "商業施設内の店舗など一部対象外あり。",
+      "variants": {
+        "card_touch": 1.5,
+        "insert": 0.5
+      }
     },
     {
       "method": "smbc_nl",
       "store": "famima",
       "rate": 7,
       "label": "対象店でスマホタッチ7%",
-      "note": "商業施設内の店舗など一部対象外あり。"
+      "note": "商業施設内の店舗など一部対象外あり。",
+      "variants": {
+        "card_touch": 1.5,
+        "insert": 0.5
+      }
     },
     {
       "method": "smbc_nl",
       "store": "mcd",
       "rate": 7,
       "label": "対象店でスマホタッチ7%",
-      "note": "商業施設内の店舗など一部対象外あり。"
+      "note": "商業施設内の店舗など一部対象外あり。",
+      "variants": {
+        "card_touch": 1.5,
+        "insert": 0.5
+      }
     },
     {
       "method": "smbc_nl",
       "store": "sukiya",
       "rate": 7,
       "label": "対象店でスマホタッチ7%",
-      "note": "商業施設内の店舗など一部対象外あり。"
+      "note": "商業施設内の店舗など一部対象外あり。",
+      "variants": {
+        "card_touch": 1.5,
+        "insert": 0.5
+      }
     },
     {
       "method": "smbc_nl",
       "store": "gusto",
       "rate": 7,
       "label": "対象店でスマホタッチ7%",
-      "note": "商業施設内の店舗など一部対象外あり。"
+      "note": "商業施設内の店舗など一部対象外あり。",
+      "variants": {
+        "card_touch": 1.5,
+        "insert": 0.5
+      }
     },
     {
       "method": "smbc_nl",
       "store": "saizeriya",
       "rate": 7,
       "label": "対象店でスマホタッチ7%",
-      "note": "商業施設内の店舗など一部対象外あり。"
+      "note": "商業施設内の店舗など一部対象外あり。",
+      "variants": {
+        "card_touch": 1.5,
+        "insert": 0.5
+      }
     },
     {
       "method": "smbc_nl",
       "store": "doutor",
       "rate": 7,
       "label": "対象店でスマホタッチ7%",
-      "note": "商業施設内の店舗など一部対象外あり。"
+      "note": "商業施設内の店舗など一部対象外あり。",
+      "variants": {
+        "card_touch": 1.5,
+        "insert": 0.5
+      }
     },
     {
       "method": "smbc_nl",
       "store": "kfc",
       "rate": 7,
       "label": "対象店でスマホタッチ7%",
-      "note": "商業施設内の店舗など一部対象外あり。"
+      "note": "商業施設内の店舗など一部対象外あり。",
+      "variants": {
+        "card_touch": 1.5,
+        "insert": 0.5
+      }
     },
     {
       "method": "smbc_nl",
       "store": "mos",
       "rate": 7,
       "label": "対象店でスマホタッチ7%",
-      "note": "商業施設内の店舗など一部対象外あり。"
+      "note": "商業施設内の店舗など一部対象外あり。",
+      "variants": {
+        "card_touch": 1.5,
+        "insert": 0.5
+      }
     },
     {
       "method": "seven_plus",
@@ -1036,14 +1090,22 @@
       "store": "yoshinoya",
       "rate": 7.0,
       "label": "対象店でスマホタッチ7%",
-      "note": "商業施設内の店舗など一部対象外あり。カード現物のタッチ・iD・差し込みは対象外。"
+      "note": "商業施設内の店舗など一部対象外あり。カード現物のタッチ・iD・差し込みは対象外。",
+      "variants": {
+        "card_touch": 1.5,
+        "insert": 0.5
+      }
     },
     {
       "method": "smbc_nl",
       "store": "jonathan",
       "rate": 7.0,
       "label": "対象店でスマホタッチ7%",
-      "note": "商業施設内の店舗など一部対象外あり。カード現物のタッチ・iD・差し込みは対象外。"
+      "note": "商業施設内の店舗など一部対象外あり。カード現物のタッチ・iD・差し込みは対象外。",
+      "variants": {
+        "card_touch": 1.5,
+        "insert": 0.5
+      }
     },
     {
       "method": "smbc_nl",

@@ -200,7 +200,7 @@ function loadData(d){
   STORES = d.stores; NOT_AVAILABLE = d.not_available || {}; LOOKUP_URL = d.lookup_endpoint || "";
   // AI検索の窓口は GitHub Pages 版からだけ呼べる（他の場所では呼び出しが許可されない）
   if (!/(^|\.)github\.io$|^localhost$/.test(location.hostname)) LOOKUP_URL = "";
-  RULES = d.rules.map(r=>({m:r.method, s:r.store, rate:r.rate, label:r.label, note:r.note}));
+  RULES = d.rules.map(r=>({m:r.method, s:r.store, rate:r.rate, label:r.label, note:r.note, variants:r.variants}));
 }
 
 /* ============ 保存 ============ */
@@ -340,7 +340,7 @@ function renderSuggest(){
   let switchGain = 0, switchCount = 0;
   for (const s of r.favs){
     const u = state.usual[s.id]; if (!u) continue;
-    const list = rank(s), top = list.find(x=>!x.unsure) || list[0], usual = list.find(x=>x.m.id===u);
+    const list = rank(s), top = list.find(x=>!x.unsure) || list[0], usual = usualOf(s, list);
     if (top && usual && top.rate > usual.rate){ switchGain += spendOf(s.id)*(top.rate-usual.rate)/100; switchCount++; }
   }
   if (switchGain > 0){
@@ -640,17 +640,42 @@ function renderMethods(){
 }
 
 /* よく行くお店：いつもの払い方とおすすめを並べて表示 */
+// 払い方で率が変わるもの（三井住友カード(NL)の対象店など）：そのお店のルールに払い方ごとの率がある場合だけ選択肢を分ける
+function usualOptions(s, list){
+  const out = [];
+  for (const r of list){
+    const rule = RULES.find(x=>x.m===r.m.id && x.s===s.id && x.variants);
+    if (rule && r.m.variants){
+      for (const v of r.m.variants){
+        const vr = v.id in rule.variants ? rule.variants[v.id] : null;
+        const rate = vr===null ? r.rate : r.rate - rule.rate + vr;
+        out.push({value:`${r.m.id}:${v.id}`, label:`${r.m.name}（${v.label}）`, rate, row:r});
+      }
+    } else {
+      out.push({value:r.m.id, label:r.m.name, rate:r.rate, row:r});
+    }
+  }
+  return out;
+}
+function usualOf(s, list){
+  const v = state.usual[s.id]; if (!v) return null;
+  const opts = usualOptions(s, list);
+  // 以前の保存値（払い方の指定なし）は、そのカードの最初の払い方として扱う
+  return opts.find(o=>o.value===v) || opts.find(o=>o.value.split(":")[0]===v) || null;
+}
 const yenStr = v => Math.round(v).toLocaleString();
 function favLines(s){
   const list = rank(s);
   const top = list.find(r=>!r.unsure) || list[0];
   if (!top) return `<div class="fav-best">使える支払い方法が登録されていません</div>`;
   const spend = spendOf(s.id);
-  const usual = list.find(r=>r.m.id===state.usual[s.id]);
-  const topLine = (prefix) => `${prefix}：${esc(top.m.name)} <b>${fmt(top.rate)}%</b>（月 約${yenStr(spend*top.rate/100)}円分`;
+  const usual = usualOf(s, list);
+  const topOpt = usualOptions(s, [top])[0];
+  const topName = topOpt ? topOpt.label : top.m.name;
+  const topLine = (prefix) => `${prefix}：${esc(topName)} <b>${fmt(top.rate)}%</b>（月 約${yenStr(spend*top.rate/100)}円分`;
   if (!usual) return `<div class="fav-best">${topLine("おすすめ")}）</div>`;
-  const usualLine = `<div class="fav-best">いつもの払い方：${esc(usual.m.name)} ${fmt(usual.rate)}%（月 約${yenStr(spend*usual.rate/100)}円分）</div>`;
-  if (usual.m.id===top.m.id || usual.rate >= top.rate) return usualLine + `<div class="fav-best"><b>いつもの払い方がいちばんおトクです</b></div>`;
+  const usualLine = `<div class="fav-best">いつもの払い方：${esc(usual.label)} ${fmt(usual.rate)}%（月 約${yenStr(spend*usual.rate/100)}円分）</div>`;
+  if (usual.rate >= top.rate) return usualLine + `<div class="fav-best"><b>いつもの払い方がいちばんおトクです</b></div>`;
   const diff = spend*(top.rate-usual.rate)/100;
   return usualLine + `<div class="fav-best">${topLine("おすすめ")}・<b>+${yenStr(diff)}円</b>）</div>`;
 }
@@ -660,9 +685,10 @@ function renderFavs(){
   $("#favlist").innerHTML = state.favs.map(id=>{
     const s = STORES.find(x=>x.id===id); if (!s) return "";
     const usable = rank(s);
-    const cur = state.usual[id] || "";
-    const opts = `<option value="">いつもの払い方を選ぶ</option>` + usable.map(r=>
-      `<option value="${r.m.id}" ${cur===r.m.id?"selected":""}>${esc(r.m.name)}</option>`).join("");
+    const curOpt = usualOf(s, usable);
+    const cur = curOpt ? curOpt.value : "";
+    const opts = `<option value="">いつもの払い方を選ぶ</option>` + usualOptions(s, usable).map(o=>
+      `<option value="${esc(o.value)}" ${cur===o.value?"selected":""}>${esc(o.label)}</option>`).join("");
     return `<div class="fav-store">
       <div class="fav-head">
         <div class="mname" style="cursor:pointer;flex:1" data-open="${esc(s.name)}">${esc(s.name)}</div>
