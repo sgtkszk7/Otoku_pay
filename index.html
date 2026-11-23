@@ -97,6 +97,8 @@
   .how{font-size:12.5px;color:var(--accent);font-weight:500;margin-top:2px}
   .more{flex:none;display:inline-flex;align-items:center;gap:2px;border:1px solid var(--accent);background:var(--accent-soft);color:var(--accent);font:inherit;font-size:12.5px;font-weight:700;border-radius:999px;padding:6px 8px 6px 12px;min-height:34px;cursor:pointer;margin-right:2px;white-space:nowrap}
   .chev{font-size:16px;line-height:1;display:inline-block;transition:transform .15s}
+  .chev-btn{flex:none;border:0;background:transparent;color:var(--muted);font-size:18px;padding:10px 6px;cursor:pointer}
+  .chev-btn .chev{font-size:18px}
   .srow.open .chev{transform:rotate(90deg)}
   .srow-detail{padding:0 4px 12px 48px}
   .usual-box{background:var(--gold-soft);border-radius:12px;padding:8px 10px;margin:4px 0 6px}
@@ -637,6 +639,8 @@ function storeDetailHtml(s){
 function rowHtml(s){
   const list = rank(s), top = bestOf(list);
   const fav = state.favs.includes(s.id), open = openIds.has(s.id);
+  // 条件が1行（how）で書けているお店は従来どおり。条件が一覧に出ないお店だけ「詳細 ›」で目立たせる
+  const needDetail = !!(top && top.notes && top.notes.length && !(top.how && top.how.length));
   let gain = "";
   const u = usualOf(s, list);
   if (u && top && top.rate > u.rate){
@@ -652,9 +656,11 @@ function rowHtml(s){
           : `1位 ${esc(top.m.name)} <b>${fmt(top.rate)}%</b>`}</span>
         ${top && top.how && top.how.length ? `<span class="srow-how">${esc(top.how.join("＋"))}</span>` : ""}
         ${gain}
-        ${!open && top && top.notes && top.notes.length ? `<span class="srow-cond">ⓘ 条件あり</span>` : ""}
+        ${needDetail && !open ? `<span class="srow-cond">ⓘ 条件あり</span>` : ""}
       </button>
-      <button class="more" data-toggle="${s.id}" tabindex="-1" aria-hidden="true">${open?"閉じる":"詳細"}<span class="chev">›</span></button>
+      ${needDetail
+        ? `<button class="more" data-toggle="${s.id}" tabindex="-1" aria-hidden="true">${open?"閉じる":"詳細"}<span class="chev">›</span></button>`
+        : `<button class="chev-btn" data-toggle="${s.id}" tabindex="-1" aria-hidden="true"><span class="chev">›</span></button>`}
     </div>
     ${open ? `<div class="srow-detail">${storeDetailHtml(s)}</div>` : ""}
   </div>`;
