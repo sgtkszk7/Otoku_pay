@@ -157,6 +157,8 @@
   .spend{display:flex;align-items:center;gap:4px;font-size:13px;color:var(--muted);white-space:nowrap}
   .spend input{width:92px;padding:6px 8px;font-size:14px;text-align:right}
   .sug{padding:12px 0;border-top:1px solid var(--line)}
+  .sug-title{font-size:14px;margin:16px 0 2px;color:var(--accent)}
+  .sug-title + .sug{border-top:0}
   .sug:first-of-type{border-top:0}
   .sug-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
   .gain{color:var(--gold);font-size:18px;font-weight:700;white-space:nowrap}
@@ -528,13 +530,22 @@ function renderSuggest(){
     if (r.switchGain > 0.5) html += '<div class="note">いつもの払い方を変えると月平均 +約'+yenStr(r.switchGain)+'円分</div>';
   }
   if (r.cur.omitted.length) html += '<div class="note">金額を算定できないため合計から除外：'+esc(r.cur.omitted.join("、"))+'</div>';
+  html += '<h3 class="sug-title">新しく作るとおトクになる支払い方法</h3>';
   for (const o of r.out){
     html += '<div class="sug"><div class="sug-head"><b>'+esc(o.m.name)+'を追加すると</b><span class="gain">年 +約'+yenStr(o.yearly)+'円分</span></div><div class="bd">'+
       o.used.map(u=>'<span>'+esc(u.s.name)+' 年 +約'+yenStr(u.gain)+'円分</span>').join("")+'</div>'+
       '<div class="note">年会費 '+yenStr(o.m.annual_fee_yen||0)+'円を差し引いた試算です。</div></div>';
   }
-  if (!r.out.length && r.cur.entries.length) html += '<div class="note">試算対象で年間100円以上増える追加候補はありません。</div>';
-  if (r.unused.length) html += '<div class="note">'+r.unused.map(m=>esc(m.name)).join("、")+'は、登録店の1位・上限超過分の支払い・チャージのいずれにも使っていません。</div>';
+  if (!r.out.length && r.cur.entries.length) html += '<div class="note">今の組み合わせで、よく行くお店ではほぼ最大の還元を受けられています。新しく作って年100円以上増える支払い方法はありません。</div>';
+  html += '<h3 class="sug-title">よく行くお店では出番がない支払い方法</h3>';
+  if (!r.unused.length) html += '<div class="note">登録した支払い方法は、どれもよく行くお店のどこかで使われています。</div>';
+  for (const m of r.unused){
+    const fee = m.annual_fee_yen || 0;
+    html += '<div class="sug"><div class="sug-head"><b>'+esc(m.name)+'</b><span class="mkind">'+(fee ? '年会費 '+yenStr(fee)+'円' : '年会費無料')+'</span></div>'+
+      '<div class="note">'+(fee
+        ? 'よく行くお店では、ほかの支払い方法の方がおトクです。年会費がかかるので、ネット通販など登録していないお店でも使っていなければ、解約も検討してみてください。'
+        : 'よく行くお店では、ほかの支払い方法の方がおトクです。年会費は無料なので、持っていても損はありません。ネット通販や旅行など、登録していない場面での使い道も含めて判断してください。')+'</div></div>';
+  }
   el.innerHTML = html+'<p class="note">当月から12か月、毎月同額を月内で均等に使う前提です。期間が登録されている特典は対象日だけ加算します。対象となる提示ポイントを含め、1ポイント＝1円相当で試算します。感謝デーなど特定の日だけの割引は含めていません。月・年の上限は登録店全体で共有し、利用明細ごとの端数は概算です。</p>';
 }
 
