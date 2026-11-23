@@ -212,7 +212,7 @@
 
   <!-- 支払い方法 -->
   <section id="tab-methods" class="hidden">
-    <div class="banner info">ふだん使っている支払い方法にチェックを入れてください。還元率は基本の払い方に限って上書きできます。カード現物など個別に設定された払い方は、その専用率で計算します。<br>※ カード番号などは入力しません。この端末のブラウザにだけ保存されます。</div>
+    <div class="banner info">ふだん使っている支払い方法にチェックを入れてください。還元率は基本の払い方に限って上書きできます。カード現物など個別に設定された払い方は、その専用率で計算します。<br>QUICPay・iD・Apple Payなどで払う場合は、つながっているクレジットカードを選んでください（ポイントはそのカードの分です）。<br>※ カード番号などは入力しません。この端末のブラウザにだけ保存されます。</div>
     <div class="card" id="methodlist"></div>
     <div class="card">
       <h2>貯めたいポイントの順番</h2>
@@ -378,6 +378,7 @@ function baseOf(m){ const o = state.overrides[m.id]; return (o!==undefined && o!
 function usableAt(m, store){
   if (m.only_stores && (!store || !m.only_stores.includes(store.id))) return false;  // お店専用の支払い方法
   if (store && NOT_AVAILABLE[store.id] && NOT_AVAILABLE[store.id].includes(m.id)) return false;
+  if (store && m.accepted?.no?.includes(store.id)) return false;  // 電子マネーなど、使えないと確認できたお店
   return true;
 }
 /* お店独自のポイント（家電量販店など）：支払い方法の種類で付与率が変わる */
@@ -570,7 +571,7 @@ function rank(store, wallet=activeMethods(), date=dateJST(), typical=false){
   for (const m of methods){
     if (!usableAt(m, store) || (scenario?.methods && !scenario.methods.includes(m.id))) continue;
     const base = baseOf(m);
-    let rate = base, parts = m.charge ? [] : [{t:`基本 ${fmt(base)}%`}], notes = [];
+    let rate = base, parts = m.charge ? (base ? [{t:`支払い分 ${fmt(base)}%`}] : []) : [{t:`基本 ${fmt(base)}%`}], notes = [];
     const rule = store && RULES.find(r=>r.m===m.id && r.s===store.id);
     const special = rule?.scenario_rates?.[scenario?.id];
     if (rule){
@@ -597,6 +598,10 @@ function rank(store, wallet=activeMethods(), date=dateJST(), typical=false){
     const payRate = rate;
     const op = ownPoint(m, store);
     let unsure = false;
+    if (store && m.accepted && !m.accepted.yes?.includes(store.id)){
+      unsure = true;  // 電子マネーなど、このお店で使えるか確認できていない
+      parts.push({t:"このお店で使えるか未確認", cls:"warn"});
+    }
     if (store && store.own_points && !op){
       unsure = true;  // お店のポイントがこの支払い方法でいくら付くか未確認
       parts.push({t:`${store.own_points.name}は未確認`, cls:"warn"});
@@ -914,7 +919,7 @@ function renderMethods(){
           .concat([`<option value="cash" ${sel==="cash"?"selected":""}>現金など（ポイントなし）</option>`]).join("");
         html += `<div class="method">
           <input type="checkbox" data-m="${m.id}" ${on?"checked":""} aria-label="${esc(m.name)}">
-          <div class="grow"><div class="mname">${esc(m.name)}</div><div class="mkind">${esc(m.kind)}・${esc(m.point)}が貯まる</div>
+          <div class="grow"><div class="mname">${esc(m.name)}</div><div class="mkind">${esc(m.kind)}・${esc(m.point)}が貯まる${m.base ? `（支払い分 ${fmt(m.base)}%＋チャージ分）` : ""}</div>
           ${on ? `<label class="mkind" style="display:block;margin-top:6px">チャージ方法
             <select class="store-pick" style="margin-top:4px;padding:8px 10px;font-size:14px" data-charge="${m.id}">${opts}</select></label>` : ""}
           </div>

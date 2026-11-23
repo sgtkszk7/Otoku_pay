@@ -323,6 +323,197 @@
       }
     },
     {
+      "id": "suica",
+      "name": "Suica（交通系IC）",
+      "kind": "電子マネー",
+      "group": "電子マネー",
+      "base": 0,
+      "point": "JRE POINT",
+      "charge": true,
+      "charge_rates": {
+        "smbc_nl": 0,
+        "smbc_gold_nl": 0,
+        "olive": 0,
+        "jcb_w": 0,
+        "dcard": 0,
+        "rakuten_card": 0.5
+      },
+      "charge_note": "三井住友カード（NL・ゴールドNL・Olive）・JCB・dカードは、モバイルSuica・Apple PayのSuicaへのチャージはポイント対象外（三井住友カードはGoogle Payからのチャージなら対象）。楽天カードは、楽天ペイアプリのSuica（Android）からチャージすると0.5%。そのほかのカードは付与率を確認できていません。",
+      "note": "Suicaで払っても、JRE POINTが貯まるのは駅ビルなどのJRE POINT加盟店だけです。コンビニなどでは、チャージに使ったカードのポイントだけになります。PASMOなどほかの交通系ICも、ほぼ同じ考え方です。",
+      "src": "https://www.jreast.co.jp/suica/shopping/",
+      "official_domains": [
+        "jreast.co.jp",
+        "jrepoint.jp"
+      ],
+      "annual_fee_yen": 0,
+      "accepted": {
+        "yes": [
+          "seven",
+          "famima",
+          "lawson",
+          "aeon",
+          "okstore",
+          "mybasket",
+          "seiyu",
+          "welcia",
+          "tsuruha",
+          "matsukiyo",
+          "mcd",
+          "kfc",
+          "mos",
+          "sukiya",
+          "yoshinoya",
+          "matsuya",
+          "gusto",
+          "jonathan",
+          "starbucks",
+          "tullys",
+          "doutor",
+          "bic",
+          "yodobashi",
+          "yamada",
+          "joshin",
+          "kohnan",
+          "muji",
+          "uniqlo"
+        ],
+        "no": [
+          "amazon",
+          "rakuten_ichiba",
+          "yahoo"
+        ]
+      }
+    },
+    {
+      "id": "edy",
+      "name": "楽天Edy",
+      "kind": "電子マネー",
+      "group": "電子マネー",
+      "base": 0.5,
+      "point": "楽天ポイント",
+      "charge": true,
+      "charge_rates": {
+        "rakuten_card": 0.5,
+        "jcb_w": 0,
+        "dcard": 0,
+        "paypay_card": 0
+      },
+      "charge_note": "楽天カードから楽天Edyにチャージすると200円につき1ポイント（0.5%）。JCB・dカード・PayPayカードはEdyへのチャージはポイント対象外。そのほかのカードは付与率を確認できていません。",
+      "note": "楽天Edyで払うと200円（税込）につき1ポイント（0.5%）。事前に楽天ポイントを貯める設定が必要です。",
+      "src": "https://edy.rakuten.co.jp/",
+      "official_domains": [
+        "edy.rakuten.co.jp",
+        "rakuten-card.co.jp",
+        "rakuten.co.jp"
+      ],
+      "annual_fee_yen": 0,
+      "accepted": {
+        "yes": [
+          "seven",
+          "famima",
+          "lawson",
+          "seiyu",
+          "matsukiyo",
+          "tsuruha",
+          "bic",
+          "mcd"
+        ],
+        "no": [
+          "amazon",
+          "rakuten_ichiba",
+          "yahoo",
+          "aeon",
+          "mybasket"
+        ]
+      }
+    },
+    {
+      "id": "waon",
+      "name": "WAON",
+      "kind": "電子マネー",
+      "group": "電子マネー",
+      "base": 0.5,
+      "point": "WAON POINT",
+      "charge": true,
+      "charge_rates": {
+        "aeon_card": 0.5,
+        "smbc_nl": 0,
+        "smbc_gold_nl": 0,
+        "olive": 0,
+        "jcb_w": 0,
+        "dcard": 0,
+        "paypay_card": 0
+      },
+      "charge_note": "WAONへのクレジットチャージは原則ポイント対象外。イオンカードセレクト（イオン銀行キャッシュ＋デビット）のオートチャージだけ200円ごとに1ポイント（0.5%）。三井住友カード・JCB・dカード・PayPayカードは対象外。",
+      "note": "WAONで払うと200円（税込）につき1ポイント（0.5%）。WAON会員登録をすると、イオングループの対象店舗では2倍（1%）。毎月20日・30日のイオンの感謝デーも5%OFFの対象です。",
+      "src": "https://www.aeon.co.jp/waon/point/",
+      "official_domains": [
+        "aeon.co.jp",
+        "waon.net"
+      ],
+      "annual_fee_yen": 0,
+      "accepted": {
+        "yes": [
+          "aeon",
+          "mybasket",
+          "famima",
+          "lawson",
+          "welcia",
+          "tsuruha",
+          "mcd",
+          "yoshinoya"
+        ],
+        "no": [
+          "amazon",
+          "rakuten_ichiba",
+          "yahoo",
+          "seven"
+        ]
+      }
+    },
+    {
+      "id": "nanaco",
+      "name": "nanaco",
+      "kind": "電子マネー",
+      "group": "電子マネー",
+      "base": 0.5,
+      "point": "nanacoポイント",
+      "charge": true,
+      "charge_rates": {
+        "seven_plus": 0.5,
+        "nanaco_credit": 0,
+        "jcb_w": 0,
+        "dcard": 0
+      },
+      "charge_note": "セブンカード・プラスからnanacoにチャージすると0.5%。nanacoクレジットカード・JCB・dカードはnanacoへのチャージはポイント対象外。そのほかのカードは付与率を確認できていません。",
+      "note": "nanacoで払うと200円（税抜）につき1ポイント（約0.5%）。セブン‐イレブンではボーナスポイント対象商品もあります。",
+      "src": "https://www.nanaco-net.jp/how-to/save_point/shopping.html",
+      "official_domains": [
+        "nanaco-net.jp",
+        "sej.co.jp"
+      ],
+      "annual_fee_yen": 0,
+      "accepted": {
+        "yes": [
+          "seven",
+          "bic",
+          "mcd",
+          "tsuruha",
+          "kfc",
+          "yoshinoya"
+        ],
+        "no": [
+          "amazon",
+          "rakuten_ichiba",
+          "yahoo",
+          "aeon",
+          "mybasket",
+          "famima",
+          "lawson"
+        ]
+      }
+    },
+    {
       "id": "sbux_card",
       "name": "スターバックスカード",
       "kind": "プリペイド（スタバ専用）",
@@ -666,7 +857,8 @@
             "label": "感謝デー",
             "methods": [
               "aeon_card",
-              "aeon_pay"
+              "aeon_pay",
+              "waon"
             ],
             "how": "20日・30日に払う"
           }
@@ -1824,6 +2016,14 @@
       "override": true,
       "label": "QUICPay不可（カード払い0.5%）",
       "note": "ネット通販ではQUICPayが使えません。"
+    },
+    {
+      "method": "waon",
+      "store": "aeon",
+      "rate": 1.0,
+      "label": "イオングループで2倍（WAON会員登録）",
+      "note": "WAON会員登録（所有者情報登録）をしたWAONなら、イオングループの対象店舗で200円につき2ポイント。",
+      "src": "https://www.waon.net/campaign/20190601_2baipointcp/"
     }
   ],
   "not_available": {

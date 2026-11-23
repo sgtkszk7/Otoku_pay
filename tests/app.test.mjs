@@ -34,7 +34,7 @@ test("store and review follow the displayed default and explicit point priority"
 test("charge reward requires a known pair and candidate wallet recalculates existing cards",()=>{
   const run=app({methods:["sbux_card","saison_pearl"],favs:["starbucks"],spend:{starbucks:10000}});
   assert.equal(run('rows("starbucks").find(r=>r.m.charge).rate'),0);
-  assert.equal(run('state.methods=["sbux_card"]; METHODS.find(m=>m.charge).charge_rates={jcb_w:5.5}; suggest().out.find(o=>o.m.id==="jcb_w").yearly'),6600);
+  assert.equal(run('state.methods=["sbux_card"]; METHODS.find(m=>m.id==="sbux_card").charge_rates={jcb_w:5.5}; suggest().out.find(o=>o.m.id==="jcb_w").yearly'),6600);
   assert.equal(run('state.charge.sbux_card="cash"; suggest().out.some(o=>o.yearly===6600)'),false);
 });
 test("month cap across stores, excess base rate, annual cap and alternative payment",()=>{
