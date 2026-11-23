@@ -335,6 +335,13 @@ def main():
     args = parser.parse_args()
     data = json.loads(DATA.read_text(encoding="utf-8"))
     tasks = target_ids(data)
+    # 手動実行で対象を絞る（例: ONLY_TARGETS="method-rakuten_card,store-seven"）。空なら全件
+    picked = set(filter(None, (x.strip() for x in os.getenv("ONLY_TARGETS", "").split(","))))
+    if picked:
+        unknown = picked - set(tasks)
+        if unknown:
+            parser.error("unknown target: " + ", ".join(sorted(unknown)))
+        tasks = [t for t in tasks if t in picked]
     if args.list:
         print(json.dumps(tasks))
         return 0

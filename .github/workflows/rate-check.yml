@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: "17 0 1 * *"
   workflow_dispatch:
+    inputs:
+      targets:
+        description: "調べる対象（空なら全件）。お試しは例: method-rakuten_card,store-seven"
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -19,6 +24,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - id: list
+        env:
+          ONLY_TARGETS: ${{ inputs.targets }}
         run: echo "items=$(python3 scripts/check_rates.py --list)" >> "$GITHUB_OUTPUT"
 
   check:
@@ -63,6 +70,8 @@ jobs:
           path: results
           merge-multiple: true
       - id: report
+        env:
+          ONLY_TARGETS: ${{ inputs.targets }}
         run: python3 scripts/check_rates.py --aggregate results
       - name: Pull Request を作成
         if: ${{ !cancelled() && steps.report.outputs.has_changes == 'true' }}
