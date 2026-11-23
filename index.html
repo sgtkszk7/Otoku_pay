@@ -246,7 +246,7 @@ function loadData(d){
   STORES = d.stores; NOT_AVAILABLE = d.not_available || {}; LOOKUP_URL = d.lookup_endpoint || "";
   // AI検索の窓口は GitHub Pages 版からだけ呼べる（他の場所では呼び出しが許可されない）
   if (!/(^|\.)github\.io$|^localhost$/.test(location.hostname)) LOOKUP_URL = "";
-  RULES = d.rules.map(r=>({m:r.method, s:r.store, rate:r.rate, label:r.label, note:r.note, variants:r.variants, override:!!r.override}));
+  RULES = d.rules.map(r=>({m:r.method, s:r.store, rate:r.rate, label:r.label, note:r.note, variants:r.variants, override:!!r.override, max:r.rate_max, maxLabel:r.max_label}));
 }
 
 /* ============ 保存 ============ */
@@ -457,7 +457,11 @@ function rank(store){
     const rule = store && RULES.find(r=>r.m===m.id && r.s===store.id);
     if (rule){
       if (rule.override){ parts = [{t:rule.label, cls:"warn"}]; rate = rule.rate; }
-      else if (rule.rate > base){ parts = [{t:`${rule.label} ${fmt(rule.rate)}%`, cls:"boost"}]; rate = rule.rate; }
+      else if (rule.rate > base){
+        // 条件しだいで上がるもの（楽天市場のSPUなど）は「最低◯%〜すべて達成で最大◯%」
+        parts = [{t: rule.max ? `${rule.label}：最低${fmt(rule.rate)}%〜すべて達成で最大${fmt(rule.max)}%` : `${rule.label} ${fmt(rule.rate)}%`, cls:"boost"}];
+        rate = rule.rate;
+      }
       else parts.push({t:rule.label, cls:"boost"});
       if (rule.note) notes.push(rule.note);
     }
@@ -507,7 +511,8 @@ function rank(store){
       how.push(`${store.own_points.app.label}を提示`);
     if (m.charge){ const ch = chargeSource(m); if (ch && ch.card) how.push(`${ch.card.name}でチャージ`); }
     if (bestPc) how.push(`${bestPc.name}を提示`);
-    list.push({m, rate: rate + pcAdd, parts, notes, unsure, how});
+    const upto = rule && rule.max && !rule.override && rule.rate > base ? {rate: rule.max + (rate - rule.rate) + pcAdd, label: rule.maxLabel||""} : null;
+    list.push({m, rate: rate + pcAdd, parts, notes, unsure, how, upto});
   }
   // 条件が確認できているものを先に、その中で還元率の高い順
   list.sort((a,b)=>(a.unsure - b.unsure) || (sameRate(a.rate,b.rate) ? 0 : b.rate-a.rate) || (prioOf(a.m) - prioOf(b.m)) || (!!b.m.star_yen - !!a.m.star_yen) || a.m.name.localeCompare(b.m.name,"ja"));
@@ -678,7 +683,7 @@ function rowHtml(s, ctx="cat"){
         <span class="mname">${esc(s.name)}</span>
         <span class="srow-best">${!top ? "使える支払い方法が登録されていません"
           : s.own_points && s.own_points.relative ? `1位 ${esc(top.m.name)}（ポイント率は商品ごと）`
-          : `1位 ${esc(top.m.name)} <b>${fmt(top.rate)}%</b>`}</span>
+          : `1位 ${esc(top.m.name)} <b>${fmt(top.rate)}%</b>${top.upto ? `（${esc(top.upto.label)}最大${fmt(top.upto.rate)}%）` : ""}`}</span>
         ${top && top.how && top.how.length ? `<span class="srow-how">${esc(top.how.join("＋"))}</span>` : ""}
         ${gain}
         ${needDetail && !open ? `<span class="srow-cond">ⓘ 条件あり</span>` : ""}

@@ -1096,9 +1096,12 @@
     {
       "method": "rakuten_card",
       "store": "rakuten_ichiba",
-      "rate": 3,
-      "label": "SPUで3%〜",
-      "note": "楽天市場のSPU（会員条件で変動）。"
+      "rate": 3.0,
+      "label": "SPU",
+      "note": "楽天市場のSPU（スーパーポイントアッププログラム）。楽天カード払いで最低3%（通常1%＋楽天カード2%）。楽天モバイルなどほかの楽天サービスの条件を満たすほど上がり、すべて達成すると最大18.5%。サービスごとに月の獲得上限があり、一部は期間限定ポイントです。",
+      "rate_max": 18.5,
+      "max_label": "SPU全達成で",
+      "src": "https://event.rakuten.co.jp/campaign/point-up/everyday/point/"
     },
     {
       "method": "paypay_card",
