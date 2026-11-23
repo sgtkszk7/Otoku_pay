@@ -281,6 +281,18 @@ function usableAt(m, store){
 }
 /* お店独自のポイント（家電量販店など）：支払い方法の種類で付与率が変わる */
 function appShown(store){ return state.app[store.id] !== false; }  // 初期値は「提示する」
+// そのお店で提示できる、持っているポイントカードのうち一番率の高いもの（1回の会計で提示できるのは1枚）
+function bestPointCard(store){
+  if (!store || !store.pc || !store.pc.length) return null;
+  let best = null;
+  for (const id of store.pc){
+    if (!state.pcs.includes(id)) continue;
+    const rate = (store.pc_rates && typeof store.pc_rates[id]==="number") ? store.pc_rates[id] : PC_RATE;
+    const card = POINT_CARDS.find(x=>x.id===id);
+    if (card && (!best || rate > best.rate)) best = {id, name:card.name, rate};
+  }
+  return best;
+}
 function payKind(m){ return m.id==="cash" ? "cash" : (m.group==="QR・スマホ決済" ? "qr" : "card"); }
 function ownPoint(m, store){
   const o = store && store.own_points; if (!o) return null;
@@ -449,15 +461,9 @@ function rank(store){
     }
     if (m.note) notes.push(m.note);
     // ポイントカード提示（ネット通販以外）
-    let pcAdd = 0;
-    if (store && store.pc.length){
-      const usable = store.pc.filter(p=>state.pcs.includes(p));
-      if (usable.length){ pcAdd = PC_RATE; }
-    }
-    if (pcAdd){
-      const names = store.pc.filter(p=>state.pcs.includes(p)).map(p=>POINT_CARDS.find(x=>x.id===p).name.replace("カード",""));
-      parts.push({t:`${names[0]}提示 +${fmt(pcAdd)}%`, cls:"pc"});
-    }
+    const bestPc = bestPointCard(store);
+    const pcAdd = bestPc ? bestPc.rate : 0;
+    if (bestPc) parts.push({t:`${bestPc.name.replace("カード","")}提示 +${fmt(pcAdd)}%`, cls:"pc"});
     // この率になる払い方・条件（一覧の「1位」とランキングに表示する）
     const how = [];
     const vRule = store && RULES.find(x=>x.m===m.id && x.s===store.id);
@@ -466,10 +472,7 @@ function rank(store){
     if (op && store.own_points.app && typeof (store.own_points.app.without||{})[payKind(m)]==="number" && appShown(store))
       how.push(`${store.own_points.app.label}を提示`);
     if (m.charge){ const ch = chargeSource(m); if (ch && ch.card) how.push(`${ch.card.name}でチャージ`); }
-    if (pcAdd){
-      const pc = store.pc.filter(p=>state.pcs.includes(p))[0];
-      how.push(`${POINT_CARDS.find(x=>x.id===pc).name}を提示`);
-    }
+    if (bestPc) how.push(`${bestPc.name}を提示`);
     list.push({m, rate: rate + pcAdd, parts, notes, unsure, how});
   }
   // 条件が確認できているものを先に、その中で還元率の高い順
