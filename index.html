@@ -128,6 +128,14 @@
   .method input[type=checkbox]{width:20px;height:20px;margin-top:3px;accent-color:var(--accent);flex:none}
   .method .grow{flex:1;min-width:0}
   .method .ov{width:84px;padding:6px 8px;font-size:14px;text-align:right}
+  .prio{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line)}
+  .prio:first-child{border-top:0}
+  .prio-n{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:700;background:var(--accent-soft);color:var(--accent)}
+  .prio:first-child .prio-n{background:var(--gold);color:#fff}
+  .prio-name{flex:1;min-width:0}
+  @media (prefers-color-scheme: dark){ .prio:first-child .prio-n{color:#10151f} }
+  .prio button{flex:none;width:40px;height:36px;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;font-size:15px;cursor:pointer}
+  .prio button:disabled{opacity:.3;cursor:default}
   .group-title{font-size:12px;font-weight:700;color:var(--muted);margin:14px 0 4px;letter-spacing:.05em}
   .btn{border:0;background:var(--accent);color:#fff;font:inherit;font-weight:500;padding:10px 16px;border-radius:10px;cursor:pointer;white-space:nowrap;flex:none}
   @media (prefers-color-scheme: dark){ .btn{color:#0e1626} }
@@ -204,6 +212,11 @@
     <div class="banner info">ふだん使っている支払い方法にチェックを入れてください。還元率は会員ランクや条件で変わるので、自分の実際の還元率に書き換えられます。<br>※ カード番号などは入力しません。この端末のブラウザにだけ保存されます。</div>
     <div class="card" id="methodlist"></div>
     <div class="card">
+      <h2>貯めたいポイントの順番</h2>
+      <p class="note" style="margin-top:-4px">還元率が同じときは、上にあるポイントが貯まる支払い方法を1位にします。</p>
+      <div id="prioList"></div>
+    </div>
+    <div class="card">
       <h2>ポイントカード</h2>
       <p class="note" style="margin-top:-4px">お会計のときに提示しているポイントカード。提示分（目安0.5%）を上乗せして計算します。</p>
       <div id="pclist"></div>
@@ -238,7 +251,7 @@ function loadData(d){
 
 /* ============ 保存 ============ */
 const KEY = "otoku-pay-v1";
-let state = {methods:[], overrides:{}, pcs:[], favs:[], spend:{}, app:{}, charge:{}, usual:{}};
+let state = {methods:[], overrides:{}, pcs:[], favs:[], spend:{}, app:{}, charge:{}, usual:{}, pointPrio:[]};
 const DEFAULT_SPEND = 3000;
 try { const s = JSON.parse(localStorage.getItem(KEY)); if (s) state = Object.assign(state, s); } catch(e){}
 if (!state.spend) state.spend = {};
@@ -246,6 +259,16 @@ if (!state.app) state.app = {};
 if (!state.charge) state.charge = {};
 if (!state.usual) state.usual = {};
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){} }
+/* 貯めたいポイントの優先順位：還元率が同じときは、優先順位の高いポイントが貯まる支払い方法を上に */
+const NO_POINT = new Set(["—", "ポイント"]);
+function pointList(){
+  const ms = state.methods.length ? METHODS.filter(m=>state.methods.includes(m.id)) : METHODS;
+  const pts = [...new Set(ms.map(m=>m.point).filter(p=>p && !NO_POINT.has(p)))];
+  const idx = p => { const i = state.pointPrio.indexOf(p); return i<0 ? 999 + pts.indexOf(p) : i; };
+  return pts.sort((a,b)=>idx(a)-idx(b));
+}
+function prioOf(m){ const i = state.pointPrio.indexOf(m.point); return i<0 ? 999 : i; }
+const sameRate = (a,b) => Math.abs(a-b) < 0.005;
 
 /* ============ 検索 ============ */
 function norm(s){
@@ -357,7 +380,7 @@ function suggest(){
   const favs = state.favs.map(id=>STORES.find(s=>s.id===id)).filter(Boolean);
   const cur = favs.map(s=>{
     let best = {m:null, rate:0};
-    for (const m of owned){ const r = methodRate(m, s); if (r!==null && r>best.rate) best = {m, rate:r}; }
+    for (const m of owned){ const r = methodRate(m, s); if (r!==null && (r>best.rate+0.005 || (best.m && sameRate(r,best.rate) && prioOf(m)<prioOf(best.m)))) best = {m, rate:r}; }
     return {s, spend: spendOf(s.id), ...best};
   });
   const curMonthly = cur.reduce((a,c)=>a + c.spend*c.rate/100, 0);
@@ -487,7 +510,7 @@ function rank(store){
     list.push({m, rate: rate + pcAdd, parts, notes, unsure, how});
   }
   // 条件が確認できているものを先に、その中で還元率の高い順
-  list.sort((a,b)=>(a.unsure - b.unsure) || b.rate-a.rate || (!!b.m.star_yen - !!a.m.star_yen) || a.m.name.localeCompare(b.m.name,"ja"));
+  list.sort((a,b)=>(a.unsure - b.unsure) || (sameRate(a.rate,b.rate) ? 0 : b.rate-a.rate) || (prioOf(a.m) - prioOf(b.m)) || (!!b.m.star_yen - !!a.m.star_yen) || a.m.name.localeCompare(b.m.name,"ja"));
   return list;
 }
 
@@ -549,7 +572,7 @@ function rankAI(res){
     list.push({m, rate: rate + pcAdd, parts, notes, unsure});
   }
   // 使えることが確認できたものを先に、その中で還元率の高い順
-  list.sort((a,b)=> (a.unsure - b.unsure) || (b.rate - a.rate) || a.m.name.localeCompare(b.m.name,"ja"));
+  list.sort((a,b)=> (a.unsure - b.unsure) || (sameRate(a.rate,b.rate) ? 0 : b.rate - a.rate) || (prioOf(a.m) - prioOf(b.m)) || a.m.name.localeCompare(b.m.name,"ja"));
   return list;
 }
 
@@ -741,7 +764,18 @@ function renderMethods(){
     }
   }
   $("#methodlist").innerHTML = html;
+  renderPrio();
   $("#pclist").innerHTML = POINT_CARDS.map(p=>`<div class="method"><input type="checkbox" data-pc="${p.id}" ${state.pcs.includes(p.id)?"checked":""}><div class="grow"><div class="mname">${esc(p.name)}</div></div></div>`).join("");
+}
+
+function renderPrio(){
+  const pts = pointList();
+  $("#prioList").innerHTML = pts.length ? pts.map((p,i)=>`<div class="prio">
+      <span class="prio-n">${i+1}</span><span class="prio-name">${esc(p)}</span>
+      <button data-prio="${esc(p)}" data-dir="-1" ${i===0?"disabled":""} aria-label="${esc(p)}を上へ">↑</button>
+      <button data-prio="${esc(p)}" data-dir="1" ${i===pts.length-1?"disabled":""} aria-label="${esc(p)}を下へ">↓</button>
+    </div>`).join("")
+    : `<div class="empty">支払い方法を登録すると並べ替えられます。</div>`;
 }
 
 /* よく行くお店：いつもの払い方とおすすめを並べて表示 */
@@ -861,6 +895,15 @@ $("#methodlist").addEventListener("change", e=>{
 $("#methodlist").addEventListener("input", e=>{
   const id = e.target.dataset.ov;
   if (id){ if (e.target.value==="") delete state.overrides[id]; else state.overrides[id]=e.target.value; save(); }
+});
+$("#prioList").addEventListener("click", e=>{
+  const b = e.target.closest("button[data-prio]"); if (!b) return;
+  const pts = pointList(), i = pts.indexOf(b.dataset.prio), j = i + Number(b.dataset.dir);
+  if (i<0 || j<0 || j>=pts.length) return;
+  [pts[i], pts[j]] = [pts[j], pts[i]];
+  // 画面に出ていないポイント（登録していない支払い方法のもの）の順番も保つ
+  state.pointPrio = [...pts, ...state.pointPrio.filter(p=>!pts.includes(p))];
+  save(); renderPrio(); renderList(); renderFavs();
 });
 $("#pclist").addEventListener("change", e=>{
   const id = e.target.dataset.pc;
