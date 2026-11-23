@@ -115,6 +115,24 @@
       "official_domains": [
         "7card.co.jp"
       ],
+      "annual_fee_yen": 0,
+      "new_apply_closed": true,
+      "note": "2026年6月30日で新規申込の受付を終了（持っている人は引き続き使えます）。これから作るなら後継の「nanacoクレジットカード」。"
+    },
+    {
+      "id": "nanaco_credit",
+      "name": "nanacoクレジットカード",
+      "kind": "クレカ",
+      "group": "クレジットカード",
+      "base": 0.5,
+      "point": "nanacoポイント",
+      "note": "2026年8月26日に発行開始。月のカード利用10万円ごとにセブン銀行ATMで現金1,000円を受け取れる「現金リワード」（上限月1.5万円）は還元率に含めていません。セブン‐イレブンでは7iD登録で10%（うちセブンマイル0.5%）、引落口座をセブン銀行にすると+1%。",
+      "src": "https://www.nanaco-net.jp/cp/cp_nanaco01.html",
+      "official_domains": [
+        "nanaco-net.jp",
+        "7card.co.jp",
+        "sevenbank.co.jp"
+      ],
       "annual_fee_yen": 0
     },
     {
@@ -1166,8 +1184,20 @@
       "method": "seven_plus",
       "store": "seven",
       "rate": 10,
-      "label": "セブンで最大10%",
-      "note": "7iDにカード登録が必要。引落口座をセブン銀行にすると+1%。"
+      "label": "7iD登録で10%",
+      "note": "7iDにカードを登録すると、セブン‐イレブンのクレジット払いで10%（nanacoポイント9.5%＋セブンマイル0.5%）。引落口座をセブン銀行にすると+1%で最大11%。税金・公共料金など一部対象外。",
+      "rate_max": 11,
+      "max_label": "セブン銀行引落で"
+    },
+    {
+      "method": "nanaco_credit",
+      "store": "seven",
+      "rate": 10,
+      "label": "7iD登録で10%",
+      "rate_max": 11,
+      "max_label": "セブン銀行引落で",
+      "note": "7iDに登録しないと3%。登録すると10%（nanacoポイント9.5%＋セブンマイル0.5%）、引落口座をセブン銀行にすると+1%で最大11%。税金・公共料金のレジ払いは対象外。",
+      "src": "https://www.nanaco-net.jp/cp/cp_nanaco01.html"
     },
     {
       "method": "jcb_w",

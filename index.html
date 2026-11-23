@@ -505,7 +505,7 @@ function suggest(){
   const cur = simulate(wallet,favs), comparable = favs.filter(s=>!cur.omitted.includes(s.name));
   const usual = simulate(wallet,comparable,true);
   const out = [];
-  for (const m of METHODS.filter(x=>x.id!=="cash" && !wallet.includes(x))){
+  for (const m of METHODS.filter(x=>x.id!=="cash" && !x.new_apply_closed && !wallet.includes(x))){
     const next = simulate([...wallet,m], comparable);
     const yearly = Math.round(next.total-cur.total-(m.annual_fee_yen||0));
     if (yearly < 100) continue;
@@ -541,6 +541,16 @@ function renderSuggest(){
   if (!r.unused.length) html += '<div class="note">登録した支払い方法は、どれもよく行くお店のどこかで使われています。</div>';
   for (const m of r.unused){
     const fee = m.annual_fee_yen || 0;
+    if (m.only_stores){
+      // お店専用の支払い（スタバカードなど）は、そのお店でしか使わないので別の説明
+      const names = m.only_stores.map(id=>STORES.find(x=>x.id===id)?.name).filter(Boolean).join("・");
+      const fav = m.only_stores.some(id=>state.favs.includes(id));
+      html += '<div class="sug"><div class="sug-head"><b>'+esc(m.name)+'</b><span class="mkind">'+esc(names)+'専用</span></div>'+
+        '<div class="note">'+(fav
+          ? esc(names)+'では、ほかの支払い方法の方がおトクになっています。チャージ方法（「支払い方法」タブ）を見直すと順位が変わることがあります。'+(m.star_yen ? 'なお、Star（'+m.star_yen+'円で1個）はこの計算に入れていないので、Starを貯めているなら使い続ける価値はあります。' : '')
+          : esc(names)+'専用の支払い方法です。'+esc(names)+'を「よく行くお店」に追加すると、試算に入ります。')+'</div></div>';
+      continue;
+    }
     html += '<div class="sug"><div class="sug-head"><b>'+esc(m.name)+'</b><span class="mkind">'+(fee ? '年会費 '+yenStr(fee)+'円' : '年会費無料')+'</span></div>'+
       '<div class="note">'+(fee
         ? 'よく行くお店では、ほかの支払い方法の方がおトクです。年会費がかかるので、ネット通販など登録していないお店でも使っていなければ、解約も検討してみてください。'
