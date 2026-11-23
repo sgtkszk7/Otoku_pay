@@ -124,12 +124,13 @@
       "group": "クレジットカード",
       "base": 1,
       "point": "dポイント",
-      "src": "https://dcard.docomo.ne.jp/",
+      "src": "https://www.docomo.ne.jp/info/notice/page/260901_00.html",
       "official_domains": [
         "dcard.docomo.ne.jp",
         "docomo.ne.jp"
       ],
-      "annual_fee_yen": 0
+      "annual_fee_yen": 0,
+      "note": "2027年1月利用分から、通常の還元率は1%→0.5%に下がる予定（2027年5月利用分からはスマホのタッチ決済なら1%）。年1回も使わないと年会費1,650円（2028年2月の引き落としから）。"
     },
     {
       "id": "paypay_card",
@@ -383,7 +384,8 @@
       "pc": [
         "d",
         "ponta"
-      ]
+      ],
+      "note": "ローソンではPontaカードの提示分が16時〜24時は200円（税抜）ごとに2ポイント（1%）になります。dポイントカードとPontaカードはどちらか一方の提示です。"
     },
     {
       "id": "famima",
@@ -410,10 +412,8 @@
         "mcdonalds",
         "まっく"
       ],
-      "pc": [
-        "d",
-        "rakuten"
-      ]
+      "pc": [],
+      "note": "マクドナルドのdポイント・楽天ポイントは2024年1月14日で終了しました。今は公式アプリの「Myマクドナルド リワード」でポイントが貯まります（店頭注文も対象）。"
     },
     {
       "id": "sukiya",

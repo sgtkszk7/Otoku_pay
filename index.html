@@ -614,7 +614,8 @@ let activeJump = "";
 function bestOf(list){ return list.find(r=>!r.unsure) || list[0] || null; }
 function storeDetailHtml(s){
   const op = s.own_points;
-  const ownNote = op && op.note ? `<p class="note" style="margin-top:0">${esc(op.note)}</p>` : "";
+  const ownNote = (s.note ? `<p class="note" style="margin-top:0">${esc(s.note)}</p>` : "")
+    + (op && op.note ? `<p class="note" style="margin-top:0">${esc(op.note)}</p>` : "");
   const appSel = op && op.app ? `<div class="seg"><span>${esc(op.app.label)}の提示</span>
       <button data-app="${s.id}" data-v="1" class="${appShown(s)?"on":""}">する</button>
       <button data-app="${s.id}" data-v="0" class="${appShown(s)?"":"on"}">しない</button></div>` : "";
