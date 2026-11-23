@@ -7,8 +7,12 @@
 4. 2つのAIが一致し、機械チェックも通った変更だけを data.json に反映
    それ以外は「要確認」としてレポート（Pull Request の本文）に載せる
 
+あわせて、各お店で提示できる共通ポイントカード（dポイント・楽天・Ponta・V）と
+その付与率の変化（導入・終了・率の変更）も、同じ「Claudeで調査 → ChatGPTで独立確認」の流れでチェックする。
+
 必要な環境変数: ANTHROPIC_API_KEY, OPENAI_API_KEY
-任意: ANTHROPIC_MODEL, OPENAI_MODEL（モデル名の上書き）, ONLY（決済IDをカンマ区切りで指定）
+任意: ANTHROPIC_MODEL, OPENAI_MODEL（モデル名の上書き）, ONLY（決済IDをカンマ区切りで指定）,
+      ONLY_STORES（お店IDをカンマ区切りで指定）, SKIP_STORES=1（お店のチェックを省略）
 """
 import datetime
 import json
@@ -213,6 +217,159 @@ def chatgpt_verify(method, store_name, change):
     return extract_json(text) or {"rate": None, "found": False, "conditions": "（返答を読み取れませんでした）"}
 
 
+# ---------------------------------------------------------------- 5. お店のポイントカード
+
+def pc_label(data, pcs):
+    names = {c["id"]: c["name"] for c in data["point_cards"]}
+    return "、".join(f"{names.get(x['id'], x['id'])} {x['rate']}%" for x in pcs) or "なし"
+
+
+def current_pcs(store, data):
+    rates = store.get("pc_rates", {})
+    return [{"id": pid, "rate": rates.get(pid, data["point_card_rate"])} for pid in store.get("pc", [])]
+
+
+def normalize_pcs(items, valid_ids):
+    out = {}
+    for x in items or []:
+        pid = x.get("id") if isinstance(x, dict) else None
+        rate = x.get("rate") if isinstance(x, dict) else None
+        if pid in valid_ids and isinstance(rate, (int, float)) and 0 < rate <= 5:
+            out[pid] = float(rate)
+    return out
+
+
+def claude_check_store(store, data):
+    ids = [c["id"] for c in data["point_cards"]]
+    cards = {c["id"]: c["name"] for c in data["point_cards"]}
+    current = current_pcs(store, data)
+    prompt = f"""あなたは日本のお店のポイントサービスを調べる担当です。今日は{TODAY.isoformat()}です。
+
+対象のお店: {store['name']}（{store['cat']}・実店舗）
+お店の公式ドメイン: {', '.join(store.get('official_domains', [])) or '不明'}
+調べる共通ポイントカード（id: 名前）: {json.dumps(cards, ensure_ascii=False)}
+
+アプリに登録している現在のデータ（会計時に提示して貯まるカードと付与率%）:
+{json.dumps(current, ensure_ascii=False)}
+
+やること:
+- Web検索で、お店の公式サイトやポイント運営会社の公式発表を優先して確認し、
+  上のカードを「会計時に提示して貯められるか」と「通常の付与率(%)」を調べてください。
+  例: 200円につき1ポイントなら0.5、100円につき1ポイントなら1.0。
+- 導入・終了・付与率の変更など、現在のデータとの違いがあるかを判断してください。
+- 一部店舗だけの対応や、1か月未満の期間限定キャンペーンは「対応」に含めないでください。
+- 確信が持てない場合は changed を false にしてください。
+
+最後に、次の形のJSONだけを出力してください:
+```json
+{{"changed": true または false,
+  "point_cards": [{{"id": "d", "rate": 0.5}}],
+  "effective_date": "YYYY-MM-DD" または null,
+  "source_url": "出典URL",
+  "evidence": "根拠の要約（100字以内）"}}
+```
+point_cards には、調べた結果「今提示できる」カードをすべて入れてください（変更がなくても全部）。"""
+    text = call_claude(prompt, use_search=True)
+    parsed = extract_json(text)
+    if parsed is None or "changed" not in parsed:
+        raise ValueError("Claudeの返答からJSONを読み取れませんでした")
+    parsed["point_cards"] = normalize_pcs(parsed.get("point_cards"), ids)
+    return parsed
+
+
+def chatgpt_verify_store(store, data, url):
+    """Claudeの答えを見せずに、出典ページから提示できるカードと付与率を読み取らせる。"""
+    ids = [c["id"] for c in data["point_cards"]]
+    cards = {c["id"]: c["name"] for c in data["point_cards"]}
+    page = fetch_text(url) if url else ""
+    instructions = f"""今日は{TODAY.isoformat()}です。
+質問: 「{store['name']}」の実店舗で、会計時に提示して貯められる共通ポイントカードはどれですか？
+候補（id: 名前）: {json.dumps(cards, ensure_ascii=False)}
+それぞれの通常の付与率(%)も答えてください（200円につき1ポイントなら0.5、100円につき1ポイントなら1.0）。
+一部店舗だけの対応や期間限定キャンペーンは含めず、書かれていないことは推測しないでください。
+
+次の形のJSONだけを出力してください:
+{{"point_cards": [{{"id": "d", "rate": 0.5}}], "found": true または false, "note": "補足（100字以内）"}}"""
+    if page:
+        text = call_openai(f"{instructions}\n\n以下のページ（{url}）の記述だけをもとに答えてください:\n<page>\n{page}\n</page>")
+    else:
+        text = call_openai(f"{instructions}\n\nページ {url} を開いて、その記述をもとに答えてください。", use_search=True)
+    parsed = extract_json(text) or {}
+    return {"point_cards": normalize_pcs(parsed.get("point_cards"), ids),
+            "found": bool(parsed.get("found")), "note": str(parsed.get("note", ""))[:120]}
+
+
+def store_source_ok(url, store, data):
+    domains = list(store.get("official_domains", []))
+    for c in data["point_cards"]:
+        domains += c.get("official_domains", [])
+    return is_official(url, domains)
+
+
+def judge_store(store, data, found, verify):
+    reasons = []
+    if not store_source_ok(found.get("source_url", ""), store, data):
+        reasons.append("出典がお店かポイント運営会社の公式サイトではありません")
+    if not verify.get("found"):
+        reasons.append("ChatGPTが出典からポイントカードの情報を読み取れませんでした")
+    else:
+        a, b = found["point_cards"], verify["point_cards"]
+        if set(a) != set(b):
+            reasons.append("ChatGPTの読み取り（使えるカード）と一致しません")
+        elif any(abs(a[k] - b[k]) > TOLERANCE for k in a):
+            reasons.append("ChatGPTの読み取り（付与率）と一致しません")
+    if reasons:
+        return "review", reasons
+    eff = parse_date(found.get("effective_date"))
+    if eff and eff > TODAY:
+        return "scheduled", [f"{eff.isoformat()}から適用予定"]
+    return "apply", []
+
+
+def apply_store(store, data, pcs):
+    order = [c["id"] for c in data["point_cards"]]
+    store["pc"] = [pid for pid in order if pid in pcs]
+    rates = {pid: r for pid, r in pcs.items() if abs(r - data["point_card_rate"]) > TOLERANCE}
+    if rates:
+        store["pc_rates"] = rates
+    else:
+        store.pop("pc_rates", None)
+
+
+def check_stores(data, results, errors):
+    only = [x.strip() for x in os.environ.get("ONLY_STORES", "").split(",") if x.strip()]
+    checked = 0
+    for store in data["stores"]:
+        if only and store["id"] not in only:
+            continue
+        if store.get("cat") == "ネット通販":
+            continue  # ネット通販はポイントカードの提示がないので対象外
+        try:
+            found = claude_check_store(store, data)
+        except Exception as e:
+            errors.append(f"{store['name']}（ポイントカード）: 調査に失敗しました（{type(e).__name__}: {e}）")
+            continue
+        checked += 1
+        before = {x["id"]: x["rate"] for x in current_pcs(store, data)}
+        after = found["point_cards"]
+        same = set(before) == set(after) and all(abs(before[k] - after[k]) <= TOLERANCE for k in after)
+        if not found.get("changed") or same:
+            continue
+        try:
+            verify = chatgpt_verify_store(store, data, found.get("source_url", ""))
+        except Exception as e:
+            verify = {"point_cards": {}, "found": False, "note": f"（ChatGPTの確認に失敗: {type(e).__name__}）"}
+        decision, reasons = judge_store(store, data, found, verify)
+        entry = {"store": store, "before": [{"id": k, "rate": v} for k, v in before.items()],
+                 "after": [{"id": k, "rate": v} for k, v in after.items()],
+                 "verify": [{"id": k, "rate": v} for k, v in verify["point_cards"].items()],
+                 "verify_note": verify.get("note", ""), "found": found, "reasons": reasons}
+        if decision == "apply":
+            apply_store(store, data, after)
+        results[decision].append(entry)
+    return checked
+
+
 # ---------------------------------------------------------------- 3〜4. 判定と反映
 
 def judge(method, change, verify):
@@ -313,8 +470,13 @@ def main():
                 apply_change(data, method, ch)
             results[decision].append((method, ch, verify, reasons, before))
 
-    has_changes = any(results.values())
-    if results["apply"]:
+    store_results = {"apply": [], "scheduled": [], "review": []}
+    stores_checked = 0
+    if os.environ.get("SKIP_STORES") != "1" and not (only and not os.environ.get("ONLY_STORES")):
+        stores_checked = check_stores(data, store_results, errors)
+
+    has_changes = any(results.values()) or any(store_results.values())
+    if results["apply"] or store_results["apply"]:
         data["updated"] = TODAY.isoformat()
         data["checked_label"] = f"{TODAY.year}年{TODAY.month}月確認"
     if has_changes:
@@ -324,7 +486,7 @@ def main():
             json.dump(data, f, ensure_ascii=False, indent=2)
             f.write("\n")
 
-    report = build_report(results, errors, checked, stores)
+    report = build_report(results, errors, checked, stores, store_results, stores_checked, data)
     with open(REPORT_PATH, "w", encoding="utf-8") as f:
         f.write(report)
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
@@ -338,11 +500,12 @@ def main():
             f.write(f"date={TODAY.isoformat()}\n")
     print(report)
     # 全件失敗（APIキーの設定ミスなど）のときはワークフローを失敗にして気づけるようにする
-    if errors and not checked:
+    if errors and not checked and not stores_checked:
         sys.exit(1)
 
 
-def build_report(results, errors, checked, stores):
+def build_report(results, errors, checked, stores, store_results=None, stores_checked=0, data=None):
+    store_results = store_results or {"apply": [], "scheduled": [], "review": []}
     def line(method, ch, verify, reasons, before):
         store = stores.get(ch.get("store_id")) if ch.get("store_id") else "通常の加盟店"
         if ch.get("kind") == "note":
@@ -363,7 +526,7 @@ def build_report(results, errors, checked, stores):
         return "\n".join(rows)
 
     parts = [f"# 還元率の自動チェック（{TODAY.isoformat()}）", ""]
-    parts.append(f"調べた支払い方法: {len(checked)}件（Claude: `{ANTHROPIC_MODEL}` / ChatGPT: `{OPENAI_MODEL}`）")
+    parts.append(f"調べた支払い方法: {len(checked)}件、お店のポイントカード: {stores_checked}店（Claude: `{ANTHROPIC_MODEL}` / ChatGPT: `{OPENAI_MODEL}`）")
     parts.append("")
     sections = [
         ("apply", "✅ 反映した変更（2つのAIが一致・公式の出典あり）",
@@ -379,7 +542,25 @@ def build_report(results, errors, checked, stores):
             continue
         parts += [f"## {title}", "", desc, ""]
         parts += [line(*it) + "\n" for it in items]
-    if not any(results.values()):
+    store_titles = {"apply": "✅ お店のポイントカード：反映した変更", "scheduled": "🕒 お店のポイントカード：適用予定",
+                    "review": "⚠️ お店のポイントカード：要確認（自動では反映していません）"}
+    for key in ["apply", "scheduled", "review"]:
+        items = store_results[key]
+        if not items:
+            continue
+        parts += [f"## {store_titles[key]}", ""]
+        for it in items:
+            f = it["found"]
+            rows = [f"### {it['store']['name']}",
+                    f"- 変更: {pc_label(data, it['before'])} → **{pc_label(data, it['after'])}**",
+                    f"- 適用日: {f.get('effective_date') or '不明'}",
+                    f"- 出典: {f.get('source_url') or 'なし'}",
+                    f"- Claudeの根拠: {f.get('evidence', '')}",
+                    f"- ChatGPTの読み取り: {pc_label(data, it['verify'])}" + (f"（{it['verify_note']}）" if it.get("verify_note") else "")]
+            if it["reasons"]:
+                rows.append(f"- 判定理由: {' / '.join(it['reasons'])}")
+            parts += ["\n".join(rows) + "\n"]
+    if not any(results.values()) and not any(store_results.values()):
         parts += ["変更は見つかりませんでした。", ""]
     if errors:
         parts += ["## ❌ 調べられなかったもの", ""] + [f"- {e}" for e in errors] + [""]

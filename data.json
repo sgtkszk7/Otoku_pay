@@ -343,19 +343,38 @@
   "point_cards": [
     {
       "id": "d",
-      "name": "dポイントカード"
+      "name": "dポイントカード",
+      "official_domains": [
+        "dpoint.docomo.ne.jp",
+        "docomo.ne.jp"
+      ]
     },
     {
       "id": "rakuten",
-      "name": "楽天ポイントカード"
+      "name": "楽天ポイントカード",
+      "official_domains": [
+        "pointcard.rakuten.co.jp",
+        "rakuten.co.jp",
+        "rakuten-card.co.jp"
+      ]
     },
     {
       "id": "ponta",
-      "name": "Pontaカード"
+      "name": "Pontaカード",
+      "official_domains": [
+        "ponta.jp",
+        "loyalty.co.jp"
+      ]
     },
     {
       "id": "v",
-      "name": "Vポイントカード"
+      "name": "Vポイントカード",
+      "official_domains": [
+        "vpoint.jp",
+        "tsite.jp",
+        "cccmk.co.jp",
+        "smbc-card.com"
+      ]
     }
   ],
   "stores": [
@@ -371,7 +390,10 @@
         "7イレブン",
         "seven"
       ],
-      "pc": []
+      "pc": [],
+      "official_domains": [
+        "sej.co.jp"
+      ]
     },
     {
       "id": "lawson",
@@ -385,7 +407,10 @@
         "d",
         "ponta"
       ],
-      "note": "ローソンではPontaカードの提示分が16時〜24時は200円（税抜）ごとに2ポイント（1%）になります。dポイントカードとPontaカードはどちらか一方の提示です。"
+      "note": "ローソンではPontaカードの提示分が16時〜24時は200円（税抜）ごとに2ポイント（1%）になります。dポイントカードとPontaカードはどちらか一方の提示です。",
+      "official_domains": [
+        "lawson.co.jp"
+      ]
     },
     {
       "id": "famima",
@@ -400,6 +425,9 @@
         "d",
         "rakuten",
         "v"
+      ],
+      "official_domains": [
+        "family.co.jp"
       ]
     },
     {
@@ -413,7 +441,10 @@
         "まっく"
       ],
       "pc": [],
-      "note": "マクドナルドのdポイント・楽天ポイントは2024年1月14日で終了しました。今は公式アプリの「Myマクドナルド リワード」でポイントが貯まります（店頭注文も対象）。"
+      "note": "マクドナルドのdポイント・楽天ポイントは2024年1月14日で終了しました。今は公式アプリの「Myマクドナルド リワード」でポイントが貯まります（店頭注文も対象）。",
+      "official_domains": [
+        "mcdonalds.co.jp"
+      ]
     },
     {
       "id": "sukiya",
@@ -428,6 +459,10 @@
         "ponta",
         "rakuten",
         "v"
+      ],
+      "official_domains": [
+        "sukiya.jp",
+        "zensho.co.jp"
       ]
     },
     {
@@ -441,6 +476,9 @@
         "d",
         "rakuten",
         "v"
+      ],
+      "official_domains": [
+        "skylark.co.jp"
       ]
     },
     {
@@ -452,7 +490,10 @@
         "サイゼリア",
         "さいぜ"
       ],
-      "pc": []
+      "pc": [],
+      "official_domains": [
+        "saizeriya.co.jp"
+      ]
     },
     {
       "id": "doutor",
@@ -467,7 +508,10 @@
         "ponta",
         "v"
       ],
-      "note": "ドトールではdポイント・Vポイント（モバイルVカードのみ）・Ponta・WAON POINTのどれか1つが貯まります。ドトール バリューカードで払うと、これらの共通ポイントは貯まりません。"
+      "note": "ドトールではdポイント・Vポイント（モバイルVカードのみ）・Ponta・WAON POINTのどれか1つが貯まります。ドトール バリューカードで払うと、これらの共通ポイントは貯まりません。",
+      "official_domains": [
+        "doutor.co.jp"
+      ]
     },
     {
       "id": "kfc",
@@ -481,6 +525,9 @@
       "pc": [
         "rakuten",
         "ponta"
+      ],
+      "official_domains": [
+        "kfc.co.jp"
       ]
     },
     {
@@ -497,7 +544,11 @@
       "pc_rates": {
         "d": 1.0
       },
-      "note": "モスバーガーではdポイントカードの提示で100円（税込）ごとに1ポイント（1%）貯まります。"
+      "note": "モスバーガーではdポイントカードの提示で100円（税込）ごとに1ポイント（1%）貯まります。",
+      "official_domains": [
+        "mos.jp",
+        "mos.co.jp"
+      ]
     },
     {
       "id": "starbucks",
@@ -509,7 +560,10 @@
         "starbucks",
         "すたば"
       ],
-      "pc": []
+      "pc": [],
+      "official_domains": [
+        "starbucks.co.jp"
+      ]
     },
     {
       "id": "aeon",
@@ -522,7 +576,11 @@
         "マックスバリュ",
         "いおん"
       ],
-      "pc": []
+      "pc": [],
+      "official_domains": [
+        "aeon.com",
+        "aeon.co.jp"
+      ]
     },
     {
       "id": "matsukiyo",
@@ -534,6 +592,10 @@
       ],
       "pc": [
         "d"
+      ],
+      "official_domains": [
+        "matsukiyococokara.com",
+        "matsukiyo.co.jp"
       ]
     },
     {
@@ -546,6 +608,10 @@
       ],
       "pc": [
         "rakuten"
+      ],
+      "official_domains": [
+        "tsuruha.co.jp",
+        "tsuruha-hd.com"
       ]
     },
     {
@@ -557,6 +623,10 @@
       ],
       "pc": [
         "v"
+      ],
+      "official_domains": [
+        "welcia.co.jp",
+        "welcia-yakkyoku.co.jp"
       ]
     },
     {
@@ -583,7 +653,11 @@
             "qr": 8
           }
         }
-      }
+      },
+      "official_domains": [
+        "biccamera.com",
+        "biccamera.co.jp"
+      ]
     },
     {
       "id": "amazon",
@@ -594,7 +668,10 @@
         "amazon",
         "あまぞん"
       ],
-      "pc": []
+      "pc": [],
+      "official_domains": [
+        "amazon.co.jp"
+      ]
     },
     {
       "id": "rakuten_ichiba",
@@ -604,7 +681,10 @@
         "楽天",
         "らくてん"
       ],
-      "pc": []
+      "pc": [],
+      "official_domains": [
+        "rakuten.co.jp"
+      ]
     },
     {
       "id": "yahoo",
@@ -615,7 +695,10 @@
         "ヤフー",
         "yahoo"
       ],
-      "pc": []
+      "pc": [],
+      "official_domains": [
+        "yahoo.co.jp"
+      ]
     },
     {
       "id": "okstore",
@@ -628,7 +711,10 @@
         "OK",
         "おーけー"
       ],
-      "pc": []
+      "pc": [],
+      "official_domains": [
+        "ok-corporation.jp"
+      ]
     },
     {
       "id": "kohnan",
@@ -643,6 +729,9 @@
       ],
       "pc": [
         "rakuten"
+      ],
+      "official_domains": [
+        "hc-kohnan.com"
       ]
     },
     {
@@ -656,7 +745,11 @@
         "MUJI",
         "ムジ"
       ],
-      "pc": []
+      "pc": [],
+      "official_domains": [
+        "muji.com",
+        "ryohin-keikaku.jp"
+      ]
     },
     {
       "id": "uniqlo",
@@ -667,7 +760,11 @@
         "ゆにくろ",
         "ユニクロ"
       ],
-      "pc": []
+      "pc": [],
+      "official_domains": [
+        "uniqlo.com",
+        "fastretailing.com"
+      ]
     },
     {
       "id": "yodobashi",
@@ -690,7 +787,10 @@
             "card": 8
           }
         }
-      }
+      },
+      "official_domains": [
+        "yodobashi.com"
+      ]
     },
     {
       "id": "yamada",
@@ -710,7 +810,12 @@
         "card": 8,
         "qr": 8,
         "note": "ヤマダポイントは現金10%・クレカやQR決済8%が目安です（商品やセールにより異なる）。"
-      }
+      },
+      "official_domains": [
+        "yamada-denki.jp",
+        "yamada-denkiweb.com",
+        "yamada-holdings.jp"
+      ]
     },
     {
       "id": "joshin",
@@ -728,7 +833,11 @@
         "cash": 0,
         "card": -2,
         "note": "ジョーシンポイントは商品ごとの表示率が基準（現金払いの場合）。他社クレジットカードは表示率から2%少なくなるので、現金との差で比べています。QR決済の付与率は未確認です。"
-      }
+      },
+      "official_domains": [
+        "joshin.co.jp",
+        "joshinweb.jp"
+      ]
     },
     {
       "id": "saintmarc",
@@ -740,6 +849,9 @@
       ],
       "pc": [
         "rakuten"
+      ],
+      "official_domains": [
+        "saint-marc-hd.com"
       ]
     },
     {
@@ -754,6 +866,9 @@
       ],
       "pc": [
         "rakuten"
+      ],
+      "official_domains": [
+        "tullys.co.jp"
       ]
     },
     {
@@ -765,7 +880,10 @@
         "まいばす",
         "マイバス"
       ],
-      "pc": []
+      "pc": [],
+      "official_domains": [
+        "mybasket.co.jp"
+      ]
     },
     {
       "id": "seiyu",
@@ -781,6 +899,9 @@
       ],
       "pc": [
         "rakuten"
+      ],
+      "official_domains": [
+        "seiyu.co.jp"
       ]
     },
     {
@@ -791,7 +912,10 @@
         "せいじょういしい",
         "成城"
       ],
-      "pc": []
+      "pc": [],
+      "official_domains": [
+        "seijoishii.co.jp"
+      ]
     },
     {
       "id": "matsuya",
@@ -804,6 +928,9 @@
       ],
       "pc": [
         "d"
+      ],
+      "official_domains": [
+        "matsuyafoods.co.jp"
       ]
     },
     {
@@ -818,6 +945,9 @@
       "pc": [
         "rakuten",
         "v"
+      ],
+      "official_domains": [
+        "yoshinoya.com"
       ]
     },
     {
@@ -832,6 +962,9 @@
         "d",
         "rakuten",
         "v"
+      ],
+      "official_domains": [
+        "skylark.co.jp"
       ]
     }
   ],
