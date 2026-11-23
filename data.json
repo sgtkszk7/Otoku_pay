@@ -167,13 +167,17 @@
       "variant_rates": {
         "card": 0.5
       },
-      "monthly_cap_yen": 25000,
-      "note": "Apple Pay・Google PayのQUICPayで払うと2%（年間30万円の利用分まで。以降0.5%）。カード払いは0.5%。永久不滅ポイントを1ポイント5円相当の商品に交換した場合の率。年会費は初年度無料、2年目以降1,100円（年1回の利用で無料）。",
+      "note": "Apple Pay・Google PayのQUICPayで払うと2%（年間30万円を超える引落月まで。試算は年間30万円を目安とし、超過分は0.5%）。カード払いは0.5%。永久不滅ポイントを1ポイント5円相当の商品に交換した場合の率。年会費は初年度無料、2年目以降1,100円（年1回の利用で無料）。",
       "src": "https://www.saisoncard.co.jp/amex/lifestyle/pearl/",
       "official_domains": [
         "saisoncard.co.jp"
       ],
-      "annual_fee_yen": 0
+      "annual_fee_yen": 0,
+      "cap": {
+        "period": "year",
+        "yen": 300000,
+        "after_rate": 0.5
+      }
     },
     {
       "id": "aeon_card",
@@ -283,13 +287,22 @@
       "base": 1.5,
       "point": "WAON POINT",
       "note": "2026年10月20日〜の特典。月2万円までの利用分が対象、予告なく終了の可能性あり。",
-      "src": "https://www.aeon.com/aeonapp/campaign/202611_ap1-5/",
+      "src": "https://www.aeon.co.jp/benefits/1-5-percent/",
       "official_domains": [
         "aeon.com",
         "aeon.co.jp"
       ],
       "annual_fee_yen": 0,
-      "monthly_cap_yen": 20000
+      "cap": {
+        "period": "month",
+        "yen": 20000,
+        "after_rate": 0.5,
+        "after_by_store": {
+          "aeon": 1,
+          "mybasket": 1,
+          "welcia": 1
+        }
+      }
     },
     {
       "id": "sbux_card",
@@ -303,7 +316,12 @@
       ],
       "charge": true,
       "charge_rates": {
-        "jcb_w": 5.5
+        "jcb_w": {
+          "rate": 10.5,
+          "from": "2026-01-13",
+          "through": "2027-01-12",
+          "src": "https://j-pointpartner.jcb.co.jp/shop/000014"
+        }
       },
       "note": "公式アプリに登録したスタバカードで払うと、税込60円で1 Starが貯まります（Starは還元率には含めていません）。Starには有効期限があります。",
       "src": "https://www.starbucks.co.jp/rewards/",
@@ -311,7 +329,8 @@
         "starbucks.co.jp"
       ],
       "annual_fee_yen": 0,
-      "star_yen": 60
+      "star_yen": 60,
+      "charge_note": "JCB CARD Wの対象は、事前登録したオンライン入金・オートチャージです。2027年1月12日までの特典を1ポイント＝1円で換算し、確認期間の外はチャージ還元を試算に含めません。"
     },
     {
       "id": "kohnan_pay",
@@ -407,9 +426,25 @@
         "d",
         "ponta"
       ],
-      "note": "ローソンではPontaカードの提示分が16時〜24時は200円（税抜）ごとに2ポイント（1%）になります。dポイントカードとPontaカードはどちらか一方の提示です。",
+      "note": "dポイントまたはPontaを1枚提示。対象商品の税抜200円ごとに0〜15時59分は1ポイント、16〜23時59分は2ポイント。",
       "official_domains": [
         "lawson.co.jp"
+      ],
+      "pc_periods": {
+        "evening": {
+          "d": 1,
+          "ponta": 1
+        }
+      },
+      "scenarios": [
+        {
+          "id": "day",
+          "label": "0:00〜15:59"
+        },
+        {
+          "id": "evening",
+          "label": "16:00〜23:59"
+        }
       ]
     },
     {
@@ -508,7 +543,7 @@
         "ponta",
         "v"
       ],
-      "note": "ドトールではdポイント・Vポイント（モバイルVカードのみ）・Ponta・WAON POINTのどれか1つが貯まります。ドトール バリューカードで払うと、これらの共通ポイントは貯まりません。",
+      "note": "ドトールではdポイント・Vポイント（モバイルVカードのみ）・Ponta・WAON POINTのどれか1つが貯まります。ドトール バリューカードで払うと、これらの共通ポイントは貯まりません。 WAON POINTはこのアプリの比較対象外です。",
       "official_domains": [
         "doutor.co.jp"
       ]
@@ -563,6 +598,21 @@
       "pc": [],
       "official_domains": [
         "starbucks.co.jp"
+      ],
+      "scenarios": [
+        {
+          "id": "counter",
+          "label": "店頭払い"
+        },
+        {
+          "id": "mobile",
+          "label": "モバイルオーダー（Apple Pay対象カードを比較）",
+          "methods": [
+            "smbc_nl",
+            "smbc_gold_nl",
+            "olive"
+          ]
+        }
       ]
     },
     {
@@ -698,7 +748,23 @@
       "pc": [],
       "official_domains": [
         "yahoo.co.jp"
-      ]
+      ],
+      "scenarios": [
+        {
+          "id": "standard",
+          "label": "LINE連携特典なし"
+        },
+        {
+          "id": "linked",
+          "label": "毎日5%の条件達成"
+        }
+      ],
+      "own_points": {
+        "name": "対象商品のストアポイント",
+        "qr": 1,
+        "card": 1,
+        "note": "ストアポイント対象の注文として試算します。商品や支払い特典によって付与対象額が異なります。"
+      }
     },
     {
       "id": "okstore",
@@ -715,7 +781,17 @@
       "official_domains": [
         "ok-corporation.jp"
       ],
-      "note": "オーケーの割引は食料品（酒類を除く）だけが対象です。お酒や日用品を多く買う場合は、カード払いの方がおトクなこともあります。"
+      "note": "オーケーの割引は食料品（酒類を除く）だけが対象です。お酒や日用品を多く買う場合は、カード払いの方がおトクなこともあります。",
+      "scenarios": [
+        {
+          "id": "normal",
+          "label": "通常の会計"
+        },
+        {
+          "id": "member_food",
+          "label": "会員・対象食料品のみ（本体価格で入力）"
+        }
+      ]
     },
     {
       "id": "kohnan",
@@ -1106,16 +1182,28 @@
     {
       "method": "paypay_card",
       "store": "yahoo",
-      "rate": 5,
-      "label": "毎日最大5%",
-      "note": "LINE連携など条件あり。"
+      "rate": 1,
+      "label": "決済特典",
+      "note": "LINE連携など条件あり。",
+      "rate_max": 4,
+      "scenario_rates": {
+        "linked": 4
+      },
+      "max_label": "ストアポイントを含む条件達成時",
+      "src": "https://topics.shopping.yahoo.co.jp/notice/archives/202608121855.html"
     },
     {
       "method": "paypay_credit",
       "store": "yahoo",
-      "rate": 5,
-      "label": "毎日最大5%",
-      "note": "LINE連携など条件あり。"
+      "rate": 1,
+      "label": "決済特典",
+      "note": "LINE連携など条件あり。",
+      "rate_max": 4,
+      "scenario_rates": {
+        "linked": 4
+      },
+      "max_label": "ストアポイントを含む条件達成時",
+      "src": "https://topics.shopping.yahoo.co.jp/notice/archives/202608121855.html"
     },
     {
       "method": "aupay",
@@ -1164,9 +1252,14 @@
     {
       "method": "cash",
       "store": "okstore",
-      "rate": 2.9,
+      "rate": 0,
       "label": "会員カード提示＋現金で食料品が3%相当引き",
-      "note": "ポイントではなく、レジでの値引きです。オーケークラブ会員カード（アプリ可）を提示して現金で払うと、食料品（酒類を除く）の本体価格×3/103（約2.9%）が割り引かれます。お酒・日用品・雑貨は割引の対象外です。会員カードの発行費は200円、年会費は無料。"
+      "note": "ポイントではなく、レジでの値引きです。オーケークラブ会員カード（アプリ可）を提示して現金で払うと、食料品（酒類を除く）の本体価格×3/103（約2.9%）が割り引かれます。お酒・日用品・雑貨は割引の対象外です。会員カードの発行費は200円、年会費は無料。",
+      "scenario_rates": {
+        "member_food": 2.912621359223301
+      },
+      "benefit": "discount",
+      "src": "https://ok-corporation.jp/feature/okclub_app.html"
     },
     {
       "method": "kohnan_card",
@@ -1586,22 +1679,34 @@
       "method": "smbc_nl",
       "store": "starbucks",
       "rate": 0.5,
-      "label": "モバイルオーダーなら7%",
-      "note": "スターバックスは、アプリ経由のApple Payでのモバイルオーダーのみ対象（店頭払いとスタバカードへのチャージは対象外）。"
+      "label": "店頭払い",
+      "note": "スターバックスは、アプリ経由のApple Payでのモバイルオーダーのみ対象（店頭払いとスタバカードへのチャージは対象外）。",
+      "scenario_rates": {
+        "mobile": 7
+      },
+      "src": "https://www.smbc-card.com/mem/cardinfo/25/cardinfo4010998.jsp"
     },
     {
       "method": "smbc_gold_nl",
       "store": "starbucks",
       "rate": 0.5,
-      "label": "モバイルオーダーなら7%",
-      "note": "スターバックスは、アプリ経由のApple Payでのモバイルオーダーのみ対象（店頭払いとスタバカードへのチャージは対象外）。"
+      "label": "店頭払い",
+      "note": "スターバックスは、アプリ経由のApple Payでのモバイルオーダーのみ対象（店頭払いとスタバカードへのチャージは対象外）。",
+      "scenario_rates": {
+        "mobile": 7
+      },
+      "src": "https://www.smbc-card.com/mem/cardinfo/25/cardinfo4010998.jsp"
     },
     {
       "method": "olive",
       "store": "starbucks",
       "rate": 0.5,
-      "label": "モバイルオーダーなら7%",
-      "note": "スターバックスは、アプリ経由のApple Payでのモバイルオーダーのみ対象（店頭払いとスタバカードへのチャージは対象外）。"
+      "label": "店頭払い",
+      "note": "スターバックスは、アプリ経由のApple Payでのモバイルオーダーのみ対象（店頭払いとスタバカードへのチャージは対象外）。",
+      "scenario_rates": {
+        "mobile": 8
+      },
+      "src": "https://www.smbc-card.com/mem/cardinfo/25/cardinfo4010998.jsp"
     },
     {
       "method": "saison_pearl",

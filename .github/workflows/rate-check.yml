@@ -2,47 +2,75 @@ name: 還元率の自動チェック
 
 on:
   schedule:
-    - cron: "17 0 1 * *"   # 毎月1日 9:17（日本時間）
-  workflow_dispatch:        # Actions タブから手動でも実行できる
+    - cron: "17 0 1 * *"
+  workflow_dispatch:
 
 permissions:
-  contents: write
-  pull-requests: write
-
+  contents: read
 concurrency:
   group: rate-check
   cancel-in-progress: false
 
 jobs:
-  check:
+  targets:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    outputs:
+      items: ${{ steps.list.outputs.items }}
     steps:
       - uses: actions/checkout@v4
+      - id: list
+        run: echo "items=$(python3 scripts/check_rates.py --list)" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: ライブラリをインストール
-        run: pip install requests beautifulsoup4
-
-      - name: 還元率をチェック（Claude で調査 → ChatGPT で検証）
-        id: check
+  check:
+    needs: targets
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        target: ${{ fromJSON(needs.targets.outputs.items) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: 調査と独立照合
         env:
+          TARGET: ${{ matrix.target }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ANTHROPIC_MODEL: ${{ vars.ANTHROPIC_MODEL }}
           OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
-        run: python scripts/check_rates.py
+        run: python3 scripts/check_rates.py --target "$TARGET"
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: rate-${{ matrix.target }}
+          path: ${{ matrix.target }}.json
+          overwrite: true
+          if-no-files-found: error
 
+  report:
+    if: ${{ !cancelled() }}
+    needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: rate-*
+          path: results
+          merge-multiple: true
+      - id: report
+        run: python3 scripts/check_rates.py --aggregate results
       - name: Pull Request を作成
-        if: steps.check.outputs.has_changes == 'true'
+        if: ${{ !cancelled() && steps.report.outputs.has_changes == 'true' }}
         uses: peter-evans/create-pull-request@v7
         with:
           branch: auto/rate-check
           delete-branch: true
           add-paths: data.json
-          commit-message: "還元率データを自動更新（${{ steps.check.outputs.date }}）"
-          title: "還元率の自動チェック（${{ steps.check.outputs.date }}）"
+          commit-message: "還元率データを自動更新（${{ steps.report.outputs.date }}）"
+          title: "還元率の自動チェック（${{ steps.report.outputs.date }}）"
           body-path: check_report.md

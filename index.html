@@ -209,7 +209,7 @@
 
   <!-- 支払い方法 -->
   <section id="tab-methods" class="hidden">
-    <div class="banner info">ふだん使っている支払い方法にチェックを入れてください。還元率は会員ランクや条件で変わるので、自分の実際の還元率に書き換えられます。<br>※ カード番号などは入力しません。この端末のブラウザにだけ保存されます。</div>
+    <div class="banner info">ふだん使っている支払い方法にチェックを入れてください。還元率は基本の払い方に限って上書きできます。カード現物など個別に設定された払い方は、その専用率で計算します。<br>※ カード番号などは入力しません。この端末のブラウザにだけ保存されます。</div>
     <div class="card" id="methodlist"></div>
     <div class="card">
       <h2>貯めたいポイントの順番</h2>
@@ -237,38 +237,102 @@
   </div>
 </div>
 
+<script src="allocation.js"></script>
 <script>
 /* ============ データ（data.json から読み込み） ============ */
 let CHECKED="", METHODS=[], POINT_CARDS=[], PC_RATE=0.5, STORES=[], RULES=[], NOT_AVAILABLE={}, LOOKUP_URL="";
 function loadData(d){
+  const idOK = id => typeof id === "string" && /^[a-z][a-z0-9_]*$/.test(id);
+  for (const items of [d.methods, d.stores, d.point_cards]){
+    if (!Array.isArray(items) || items.some(x=>!idOK(x?.id)) || new Set(items.map(x=>x.id)).size !== items.length)
+      throw new Error("店舗・決済データのIDを確認してください");
+  }
   CHECKED = d.checked_label || "";
   METHODS = d.methods; POINT_CARDS = d.point_cards; PC_RATE = d.point_card_rate;
-  STORES = d.stores; NOT_AVAILABLE = d.not_available || {}; LOOKUP_URL = d.lookup_endpoint || "";
-  // AI検索の窓口は GitHub Pages 版からだけ呼べる（他の場所では呼び出しが許可されない）
-  if (!/(^|\.)github\.io$|^localhost$/.test(location.hostname)) LOOKUP_URL = "";
-  RULES = d.rules.map(r=>({m:r.method, s:r.store, rate:r.rate, label:r.label, note:r.note, variants:r.variants, override:!!r.override, max:r.rate_max, maxLabel:r.max_label}));
+  STORES = d.stores; NOT_AVAILABLE = d.not_available || {};
+  LOOKUP_URL = location.origin === "https://sgtkszk7.github.io" ? safeURL(d.lookup_endpoint) : "";
+  RULES = d.rules.map(r=>({...r, m:r.method, s:r.store, max:r.rate_max, maxLabel:r.max_label}));
 }
 
-/* ============ 保存 ============ */
-const KEY = "otoku-pay-v1";
-let state = {methods:[], overrides:{}, pcs:[], favs:[], spend:{}, app:{}, charge:{}, usual:{}, pointPrio:[]};
-const DEFAULT_SPEND = 3000;
-try { const s = JSON.parse(localStorage.getItem(KEY)); if (s) state = Object.assign(state, s); } catch(e){}
-if (!state.spend) state.spend = {};
-if (!state.app) state.app = {};
-if (!state.charge) state.charge = {};
-if (!state.usual) state.usual = {};
-function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){} }
+const KEY = "otoku-pay-v1", DEFAULT_SPEND = 3000;
+const blankState = () => ({methods:[], overrides:{}, pcs:[], favs:[], spend:{}, app:{}, charge:{}, usual:{}, pointPrio:[], scenario:{}, ai:{}});
+let state = blankState();
+const record = o => o !== null && typeof o === "object" && !Array.isArray(o);
+function safeURL(value){
+  if (typeof value !== "string") return "";
+  try { const u = new URL(value); return u.protocol === "https:" && !u.username && !u.password ? u.href : ""; }
+  catch { return ""; }
+}
+function sourceLink(url, title){
+  const href = safeURL(url);
+  if (!href) return "";
+  const a = document.createElement("a");
+  a.href = href; a.textContent = title; a.target = "_blank"; a.rel = "noopener noreferrer";
+  return a.outerHTML;
+}
+function validNumber(v, max){
+  return (typeof v==="number" || (typeof v==="string" && v.trim() !== "")) &&
+    Number.isFinite(Number(v)) && Number(v)>=0 && Number(v)<=max;
+}
+function validAI(r){
+  if (!record(r) || typeof r.found !== "boolean") return false;
+  const strings = ["store_name","summary","category","query","chain_scope","checked_at"];
+  if (strings.some(k=>r[k]!==undefined && typeof r[k]!=="string")) return false;
+  if (r.blocked) return Array.isArray(r.allowed_scopes) && r.allowed_scopes.every(x=>typeof x==="string");
+  if (!r.found) return true;
+  return Array.isArray(r.methods) && r.methods.every(x=>record(x) && METHODS.some(m=>m.id===x.id)
+    && ["yes","no","unknown"].includes(x.usable) && (x.rate===null || (typeof x.rate==="number" && validNumber(x.rate,20)))
+    && (x.note===undefined || typeof x.note==="string"))
+    && Array.isArray(r.point_cards) && r.point_cards.every(id=>POINT_CARDS.some(p=>p.id===id))
+    && Array.isArray(r.sources) && r.sources.every(x=>record(x) && typeof x.title==="string" && typeof x.url==="string");
+}
+function restore(){
+  let raw, recovered = false;
+  try {raw = JSON.parse(localStorage.getItem(KEY));} catch {recovered = true;}
+  state = blankState();
+  if (!record(raw)) return recovered || raw != null;
+  const mids = METHODS.map(m=>m.id), sids = STORES.map(s=>s.id), pcs = POINT_CARDS.map(c=>c.id);
+  const lists = {methods:mids, favs:sids, pcs, pointPrio:METHODS.map(m=>m.point)};
+  for (const [key, ids] of Object.entries(lists)){
+    const val = raw[key];
+    if (val === undefined) continue;
+    if (Array.isArray(val)) state[key] = [...new Set(val.filter(x=>ids.includes(x)))];
+    if (!Array.isArray(val) || state[key].length !== val.length) recovered = true;
+  }
+  const checks = {
+    overrides:(id,v)=>mids.includes(id) && validNumber(v,100),
+    spend:(id,v)=>sids.includes(id) && validNumber(v,1e9),
+    app:(id,v)=>sids.includes(id) && typeof v==="boolean",
+    usual:(id,v)=>sids.includes(id) && typeof v==="string" && mids.includes(v.split(":")[0]),
+    charge:(id,v)=>METHODS.some(m=>m.id===id && m.charge) && (v==="auto" || v==="cash" || mids.includes(v)),
+    scenario:(id,v)=>STORES.find(s=>s.id===id)?.scenarios?.some(x=>x.id===v),
+    ai:(id,v)=>record(v) && Number.isFinite(v.at) && v.at<=Date.now() && validAI(v.res)
+  };
+  for (const [key, check] of Object.entries(checks)){
+    if (!(key in raw)) continue;
+    if (!record(raw[key])) { recovered = true; continue; }
+    const entries = Object.entries(raw[key]).filter(([id,v])=>check(id,v));
+    state[key] = Object.fromEntries(entries);
+    if (entries.length !== Object.keys(raw[key]).length) recovered = true;
+  }
+  return recovered;
+}
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} }
 /* 貯めたいポイントの優先順位：還元率が同じときは、優先順位の高いポイントが貯まる支払い方法を上に */
 const NO_POINT = new Set(["—", "ポイント"]);
-function pointList(){
-  const ms = state.methods.length ? METHODS.filter(m=>state.methods.includes(m.id)) : METHODS;
+function pointList(wallet=activeMethods()){
+  const ms = METHODS.filter(m=>wallet.includes(m));
   const pts = [...new Set(ms.map(m=>m.point).filter(p=>p && !NO_POINT.has(p)))];
   const idx = p => { const i = state.pointPrio.indexOf(p); return i<0 ? 999 + pts.indexOf(p) : i; };
-  return pts.sort((a,b)=>idx(a)-idx(b));
+  return [...pts].sort((a,b)=>idx(a)-idx(b));
 }
-function prioOf(m){ const i = state.pointPrio.indexOf(m.point); return i<0 ? 999 : i; }
 const sameRate = (a,b) => Math.abs(a-b) < 0.005;
+function compareRows(wallet){
+  const points = new Map(pointList(wallet).map((point,i)=>[point,i]));
+  return (a,b)=>(a.unsure-b.unsure) || (sameRate(a.rate,b.rate)?0:b.rate-a.rate)
+    || ((points.get(a.m.point)??999)-(points.get(b.m.point)??999))
+    || (!!b.m.star_yen-!!a.m.star_yen) || a.m.name.localeCompare(b.m.name,"ja");
+}
 
 /* ============ 検索 ============ */
 function norm(s){
@@ -316,12 +380,13 @@ function usableAt(m, store){
 /* お店独自のポイント（家電量販店など）：支払い方法の種類で付与率が変わる */
 function appShown(store){ return state.app[store.id] !== false; }  // 初期値は「提示する」
 // そのお店で提示できる、持っているポイントカードのうち一番率の高いもの（1回の会計で提示できるのは1枚）
+function scenarioOf(store){ return store?.scenarios?.find(x=>x.id===state.scenario[store.id]) || store?.scenarios?.[0]; }
 function bestPointCard(store){
   if (!store || !store.pc || !store.pc.length) return null;
   let best = null;
   for (const id of store.pc){
     if (!state.pcs.includes(id)) continue;
-    const rate = (store.pc_rates && typeof store.pc_rates[id]==="number") ? store.pc_rates[id] : PC_RATE;
+    const rate = store.pc_periods?.[scenarioOf(store)?.id]?.[id] ?? store.pc_rates?.[id] ?? PC_RATE;
     const card = POINT_CARDS.find(x=>x.id===id);
     if (card && (!best || rate > best.rate)) best = {id, name:card.name, rate};
   }
@@ -341,130 +406,164 @@ function ownPoint(m, store){
   return {rate:v, name:o.name, relative:!!o.relative, cond};
 }
 /* チャージして使う支払い方法（スタバカードなど）：チャージに使うクレジットカードのポイントを足す */
-function chargeCards(){
+function chargeCards(wallet=activeMethods()){
   return METHODS.filter(c=>c.group==="クレジットカード" && !c.only_stores &&
-    (state.methods.length ? state.methods.includes(c.id) : true));
+    wallet.includes(c));
 }
-function chargeRateOf(m, c){
-  return (m.charge_rates && typeof m.charge_rates[c.id]==="number") ? m.charge_rates[c.id] : baseOf(c);
+function dateJST(){ return new Date(Date.now()+9*3600000).toISOString().slice(0,10); }
+function chargeRateOf(m, c, date=dateJST()){
+  const v = m.charge_rates?.[c.id];
+  if (typeof v === "number") return v;
+  return v && v.from <= date && date <= v.through ? v.rate : null;
 }
-function chargeSource(m){
+function chargeSource(m, wallet, date){
   if (!m.charge) return null;
   const sel = state.charge[m.id] || "auto";
   if (sel === "cash") return {card:null, name:"現金など（ポイントなし）", rate:0, auto:false};
   if (sel !== "auto"){
-    const c = chargeCards().find(x=>x.id===sel);  // 登録を外したカードなら「自動」に戻る
-    if (c) return {card:c, name:c.name, rate:chargeRateOf(m, c), auto:false};
+    const c = chargeCards(wallet).find(x=>x.id===sel);  // 登録を外したカードなら「自動」に戻る
+    if (c && chargeRateOf(m,c,date) === null) return {card:null, name:c.name+"（付与未確認・試算に含めません）", rate:0, auto:false};
+    if (c) return {card:c, name:c.name, rate:chargeRateOf(m,c,date), auto:false};
   }
   let best = null;
-  for (const c of chargeCards()){
-    const r = chargeRateOf(m, c);
-    if (!best || r > best.rate) best = {card:c, name:c.name, rate:r, auto:true};
+  for (const c of chargeCards(wallet)){
+    const r = chargeRateOf(m,c,date);
+    if (r !== null && (!best || r > best.rate)) best = {card:c, name:c.name, rate:r, auto:true};
   }
   return best;
 }
-function methodRate(m, store){
-  if (!usableAt(m, store)) return null;
-  const base = baseOf(m);
-  const rule = store && RULES.find(r=>r.m===m.id && r.s===store.id);
-  const op = ownPoint(m, store);
-  const ch = chargeSource(m);
-  const r0 = rule ? (rule.override ? rule.rate : Math.max(rule.rate, base)) : base;
-  return r0 + (op ? op.rate : 0) + (ch ? ch.rate : 0);
+function spendOf(id){
+  const n = state.spend[id];
+  return validNumber(n, 1e9) ? Number(n) : DEFAULT_SPEND;
 }
-
-/* ============ 見直しの試算 ============ */
-function spendOf(id){ const v = state.spend[id]; return (v===undefined || v==="") ? DEFAULT_SPEND : Math.max(0, Number(v)||0); }
-function suggest(){
-  const owned = METHODS.filter(m=>state.methods.includes(m.id) || m.id==="cash");
-  const favs = state.favs.map(id=>STORES.find(s=>s.id===id)).filter(Boolean);
-  const cur = favs.map(s=>{
-    let best = {m:null, rate:0};
-    for (const m of owned){ const r = methodRate(m, s); if (r!==null && (r>best.rate+0.005 || (best.m && sameRate(r,best.rate) && prioOf(m)<prioOf(best.m)))) best = {m, rate:r}; }
-    return {s, spend: spendOf(s.id), ...best};
-  });
-  const curMonthly = cur.reduce((a,c)=>a + c.spend*c.rate/100, 0);
-  const out = [];
-  for (const m of METHODS.filter(x=>x.id!=="cash" && !state.methods.includes(x.id))){
-    const imps = cur.map(c=>{ const r = methodRate(m, c.s); return (r!==null && r>c.rate) ? {c, rate:r, perYen:(r-c.rate)/100} : null; })
-                    .filter(Boolean).sort((a,b)=>b.perYen-a.perYen);
-    let capLeft = m.monthly_cap_yen || Infinity, monthly = 0, capped = false; const used = [];
-    for (const i of imps){
-      const yen = Math.min(i.c.spend, capLeft); if (yen<=0){ capped = true; break; }
-      if (yen < i.c.spend) capped = true;
-      monthly += yen*i.perYen; capLeft -= yen; used.push(i);
+function onlyUsual(s, list){
+  const o = usualOf(s, list);
+  if (!o || o.row.unsure) return null;
+  const row = o.row, cap = o.rate > row.afterRate ? row.cap : null;
+  return {...row, rate:o.rate, cap};
+}
+// Group identical full months. Split a transition month at verified benefit boundaries,
+// keeping both sides in the same monthly allowance.
+function estimatePeriods(wallet, today){
+  const month = today.slice(0,7)+"-01", start = new Date(month+"T00:00:00Z");
+  const dateOf = d=>d.toISOString().slice(0,10);
+  const changes = new Set();
+  for (const m of wallet) for (const [id,v] of Object.entries(m.charge_rates || {})){
+    if (!wallet.some(x=>x.id===id) || typeof v!=="object") continue;
+    changes.add(v.from);
+    changes.add(dateOf(new Date(Date.parse(v.through)+86400000)));
+  }
+  const periods=[];
+  for (let i=0; i<12; i++){
+    const first=new Date(Date.UTC(start.getUTCFullYear(),start.getUTCMonth()+i,1));
+    const next=new Date(Date.UTC(start.getUTCFullYear(),start.getUTCMonth()+i+1,1));
+    const a=dateOf(first), b=dateOf(next), cuts=[a,...[...changes].filter(x=>a<x && x<b).sort(),b];
+    const prev=periods.at(-1);
+    if (cuts.length===2 && prev?.whole && !changes.has(a)){
+      prev.months++; prev.capMonths++; continue;
     }
-    const yearly = Math.round(monthly*12 - (m.annual_fee_yen||0));
-    if (yearly >= 100) out.push({m, yearly, used, capped});
+    for (let j=0; j+1<cuts.length; j++){
+      periods.push({date:cuts[j], key:a, whole:cuts.length===2, capMonths:1,
+        months:(Date.parse(cuts[j+1])-Date.parse(cuts[j]))/(next-first)});
+    }
+  }
+  return periods;
+}
+function simulate(wallet, favs, usual=false){
+  const entries = [], omitted = [], winners = new Set(), today=dateJST();
+  const periods=estimatePeriods(wallet,today);
+  for (const s of favs){
+    const top = bestOf(rank(s,wallet,today));
+    if (top) winners.add(top.m.id);
+    if (!top || top.kind==="relative"){ omitted.push(s.name); continue; }
+    let months=0, assigned=0;
+    for (const period of periods){
+      const list=rank(s,wallet,period.date);
+      const selected = usual && onlyUsual(s,list);
+      months += period.months;
+      const cumulative=Math.round(spendOf(s.id)*months);
+      entries.push({s, period, yen:cumulative-assigned, rows:selected?[selected]:list.filter(x=>!x.unsure)});
+      assigned=cumulative;
+    }
+  }
+  return {...allocateRewards(entries), omitted, winners, entries};
+}
+function suggest(){
+  const wallet = activeMethods(), favs = state.favs.map(id=>STORES.find(s=>s.id===id)).filter(Boolean);
+  const cur = simulate(wallet,favs), comparable = favs.filter(s=>!cur.omitted.includes(s.name));
+  const usual = simulate(wallet,comparable,true);
+  const out = [];
+  for (const m of METHODS.filter(x=>x.id!=="cash" && !wallet.includes(x))){
+    const next = simulate([...wallet,m], comparable);
+    const yearly = Math.round(next.total-cur.total-(m.annual_fee_yen||0));
+    if (yearly < 100) continue;
+    const used = comparable.map(s=>({s,gain:(next.amounts.get(s.id)||0)-(cur.amounts.get(s.id)||0)})).filter(x=>x.gain>0.5);
+    out.push({m, yearly, used});
   }
   out.sort((a,b)=>b.yearly-a.yearly);
-  const unused = owned.filter(m=>m.id!=="cash" && !cur.some(c=>c.m===m));
-  return {curMonthly, out: out.slice(0,3), unused, favs};
+  return {cur, curMonthly:cur.total/12, switchGain:Math.max(0,cur.total-usual.total)/12, favs, out:out.slice(0,3),
+          unused:wallet.filter(m=>m.id!=="cash" && !cur.winners.has(m.id) && !cur.used.has(m.id))};
 }
 
 function renderSuggest(){
   const el = $("#suggest"); if (!el) return;
-  let html = `<h2>支払い方法の見直し</h2>`;
-  if (!state.methods.filter(x=>x!=="cash").length){
-    el.innerHTML = html + `<div class="empty">「支払い方法」タブで今使っているものを登録すると、もっとおトクな組み合わせを試算します。</div>`; return;
-  }
-  if (!state.favs.length){
-    el.innerHTML = html + `<div class="empty">よく行くお店を追加すると、ここに試算が出ます。</div>`; return;
+  let html = "<h2>支払い方法の見直し</h2>";
+  if (!state.methods.some(x=>x!=="cash") || !state.favs.length){
+    el.innerHTML = html + '<div class="empty">支払い方法とよく行くお店を登録すると試算できます。</div>';
+    return;
   }
   const r = suggest();
-  const yen = v => Math.round(v).toLocaleString();
-  // いつもの払い方を選んだお店：おすすめに変えた場合の差
-  let switchGain = 0, switchCount = 0;
-  for (const s of r.favs){
-    const u = state.usual[s.id]; if (!u) continue;
-    const list = rank(s), top = list.find(x=>!x.unsure) || list[0], usual = usualOf(s, list);
-    if (top && usual && top.rate > usual.rate){ switchGain += spendOf(s.id)*(top.rate-usual.rate)/100; switchCount++; }
+  if (r.cur.entries.length){
+    html += '<div class="total">手持ちの使い分けで月平均 約'+yenStr(r.curMonthly)+'円分（年 約'+yenStr(r.cur.total)+'円分）</div>';
+    if (r.switchGain > 0.5) html += '<div class="note">いつもの払い方を変えると月平均 +約'+yenStr(r.switchGain)+'円分</div>';
   }
-  if (switchGain > 0){
-    html += `<div class="total" style="background:var(--gold-soft);color:var(--gold)">いつもの払い方を${switchCount}店でおすすめに変えるだけで、月 約${yen(switchGain)}円分（年 約${yen(switchGain*12)}円分）多く貯まる見込みです。</div>`;
+  if (r.cur.omitted.length) html += '<div class="note">金額を算定できないため合計から除外：'+esc(r.cur.omitted.join("、"))+'</div>';
+  for (const o of r.out){
+    html += '<div class="sug"><div class="sug-head"><b>'+esc(o.m.name)+'を追加すると</b><span class="gain">年 +約'+yenStr(o.yearly)+'円分</span></div><div class="bd">'+
+      o.used.map(u=>'<span>'+esc(u.s.name)+' 年 +約'+yenStr(u.gain)+'円分</span>').join("")+'</div>'+
+      '<div class="note">年会費 '+yenStr(o.m.annual_fee_yen||0)+'円を差し引いた試算です。</div></div>';
   }
-  html += `<div class="total">今持っている支払い方法を、お店ごとに一番得なものに使い分けた場合：月 約${yen(r.curMonthly)}円分（年 約${yen(r.curMonthly*12)}円分）</div>`;
-  if (!r.out.length){
-    html += `<div class="note">今の組み合わせで、よく行くお店ではほぼ最大の還元を受けられています。追加して大きく増える支払い方法は見つかりませんでした。</div>`;
-  }
-  r.out.forEach(o=>{
-    html += `<div class="sug">
-      <div class="sug-head"><div><div class="mname">${esc(o.m.name)}を追加すると</div><div class="mkind">${esc(o.m.kind)}・${o.m.annual_fee_yen ? `年会費${o.m.annual_fee_yen.toLocaleString()}円` : "年会費無料"}</div></div>
-      <div class="gain">年 +約${yen(o.yearly)}円分</div></div>
-      <div class="bd">${o.used.map(u=>`<span class="boost">${esc(u.c.s.name)}：${u.c.m?`${esc(u.c.m.name)} ${fmt(u.c.rate)}%`:"なし"} → ${fmt(u.rate)}%</span>`).join("")}</div>
-      ${o.capped ? `<div class="note">・月${o.m.monthly_cap_yen.toLocaleString()}円までの利用分が対象なので、上限を考慮して計算しています。</div>` : ""}
-      ${o.m.note ? `<div class="note">・${esc(o.m.note)}</div>` : ""}
-    </div>`;
-  });
-  if (r.unused.length){
-    html += `<div class="note" style="margin-top:10px">${r.unused.map(m=>esc(m.name)).join("、")}は、登録したお店ではどこでも1位になっていません。ほかのお店やネットでの使い道も含めて判断してください。</div>`;
-  }
-  html += `<div class="note" style="margin-top:10px;border-top:1px solid var(--line);padding-top:8px">1ポイント＝1円相当、ポイントカード提示分を除いて試算した目安です。ポイントの交換先や利用条件・上限によって実際の価値は変わります。カードの発行には審査があります。申し込む前に各社の公式情報で条件を確認してください。</div>`;
-  el.innerHTML = html;
+  if (!r.out.length && r.cur.entries.length) html += '<div class="note">試算対象で年間100円以上増える追加候補はありません。</div>';
+  if (r.unused.length) html += '<div class="note">'+r.unused.map(m=>esc(m.name)).join("、")+'は、登録店の1位・上限超過分の支払い・チャージのいずれにも使っていません。</div>';
+  el.innerHTML = html+'<p class="note">当月から12か月、毎月同額を月内で均等に使う前提です。期間が登録されている特典は対象日だけ加算します。対象となる提示ポイントを含め、1ポイント＝1円相当で試算します。月・年の上限は登録店全体で共有し、利用明細ごとの端数は概算です。</p>';
 }
 
-function rank(store){
+function rank(store, wallet=activeMethods(), date=dateJST()){
+  const scenario = scenarioOf(store);
   const list = [];
-  const methods = activeMethods();
+  const methods = [...wallet];
   // 現金に特典があるお店（例：オーケーの現金割引）では、登録していなくても現金を比較に入れる
   const cash = METHODS.find(x=>x.id==="cash");
   if (store && cash && !methods.includes(cash) &&
       (RULES.some(r=>r.m==="cash" && r.s===store.id) || (store.own_points && typeof store.own_points.cash==="number"))) methods.push(cash);
   for (const m of methods){
-    if (!usableAt(m, store)) continue;
+    if (!usableAt(m, store) || (scenario?.methods && !scenario.methods.includes(m.id))) continue;
     const base = baseOf(m);
     let rate = base, parts = m.charge ? [] : [{t:`基本 ${fmt(base)}%`}], notes = [];
     const rule = store && RULES.find(r=>r.m===m.id && r.s===store.id);
+    const special = rule?.scenario_rates?.[scenario?.id];
     if (rule){
-      if (rule.override){ parts = [{t:rule.label, cls:"warn"}]; rate = rule.rate; }
+      if (special !== undefined){ rate = special; parts = [{t:scenario.label + " " + fmt(rate) + "%", cls:"boost"}]; }
+      else if (rule.override){ parts = [{t:rule.label, cls:"warn"}]; rate = rule.rate; }
       else if (rule.rate > base){
         // 条件しだいで上がるもの（楽天市場のSPUなど）は「最低◯%〜すべて達成で最大◯%」
         parts = [{t: rule.max ? `${rule.label}：最低${fmt(rule.rate)}%〜すべて達成で最大${fmt(rule.max)}%` : `${rule.label} ${fmt(rule.rate)}%`, cls:"boost"}];
         rate = rule.rate;
       }
-      else parts.push({t:rule.label, cls:"boost"});
+      else if (!rule.benefit) parts.push({t:rule.label, cls:"boost"});
       if (rule.note) notes.push(rule.note);
     }
+    const ch = m.charge ? chargeSource(m,wallet,date) : null;
+    const defaultPayRate = rate;
+    const variantRates = rule?.variants || (!rule?.override && m.variant_rates);
+    let bestVariant = null;
+    if (variantRates && m.variants){
+      bestVariant = m.variants.reduce((best,v)=>(variantRates[v.id] ?? defaultPayRate) >
+        (variantRates[best.id] ?? defaultPayRate) ? v : best, m.variants[0]);
+      rate = variantRates[bestVariant.id] ?? defaultPayRate;
+      if (rate !== defaultPayRate) parts = [{t:bestVariant.label+" "+fmt(rate)+"%"}];
+    }
+    const payRate = rate;
     const op = ownPoint(m, store);
     let unsure = false;
     if (store && store.own_points && !op){
@@ -486,15 +585,13 @@ function rank(store){
       parts.push({t: amt ? `Star 約${stars}個（${m.star_yen}円で1個）` : `Starが貯まる（${m.star_yen}円で1個）`, cls:"own"});
     }
     if (m.charge){
-      const ch = chargeSource(m);
+      if (m.charge_note) notes.push(m.charge_note);
       if (ch){
         rate += ch.rate;
         parts.push({t:`チャージ：${ch.name}${ch.auto?"（自動）":""}${ch.card?` +${fmt(ch.rate)}%`:""}`, cls: ch.card ? "boost" : ""});
-        notes.push(ch.card
-          ? `${ch.card.name}でチャージした場合のカードのポイントを足しています。${ch.auto?"チャージ方法は「支払い方法」タブで選べます。":""}`
-          : "チャージにポイントが付かない方法を選んでいます。チャージ方法は「支払い方法」タブで変えられます。");
+        if (ch.card) notes.push(ch.card.name+"でチャージした場合のポイントを加算しています。");
       } else {
-        notes.push("チャージに使うクレジットカードを登録すると、カードのポイント分も足して計算します。");
+        notes.push("付与率を確認できたチャージ元がないため、チャージ分は加算していません。");
       }
     }
     if (m.note) notes.push(m.note);
@@ -504,18 +601,22 @@ function rank(store){
     if (bestPc) parts.push({t:`${bestPc.name.replace("カード","")}提示 +${fmt(pcAdd)}%`, cls:"pc"});
     // この率になる払い方・条件（一覧の「1位」とランキングに表示する）
     const how = [];
-    const vRule = store && RULES.find(x=>x.m===m.id && x.s===store.id);
-    const hasVariants = m.variants && ((vRule && vRule.variants) || (m.variant_rates && !(vRule && vRule.override)));
-    if (hasVariants) how.push(m.variants[0].label + "で払う");
+    if (bestVariant) how.push(bestVariant.label+"で払う");
     if (op && store.own_points.app && typeof (store.own_points.app.without||{})[payKind(m)]==="number" && appShown(store))
       how.push(`${store.own_points.app.label}を提示`);
-    if (m.charge){ const ch = chargeSource(m); if (ch && ch.card) how.push(`${ch.card.name}でチャージ`); }
+    if (ch?.card) how.push(`${ch.card.name}でチャージ`);
     if (bestPc) how.push(`${bestPc.name}を提示`);
-    const upto = rule && rule.max && !rule.override && rule.rate > base ? {rate: rule.max + (rate - rule.rate) + pcAdd, label: rule.maxLabel||""} : null;
-    list.push({m, rate: rate + pcAdd, parts, notes, unsure, how, upto});
+    const upto = special === undefined && rule && rule.max && !rule.override && rule.rate >= base ? {rate: rule.max + (rate - rule.rate) + pcAdd, label: rule.maxLabel||""} : null;
+    const kind = unsure ? "unknown" : op?.relative ? "relative" : rule?.benefit==="discount" && special ? "discount" : "points";
+    const extra = (op?.rate ?? 0) + (ch?.rate ?? 0) + pcAdd;
+    const cap = !rule?.override && m.cap && payRate > (m.cap.after_by_store?.[store?.id] ?? m.cap.after_rate) ? m.cap : null;
+    list.push({m, rate:payRate+extra, payRate, extra, parts, notes, unsure, how, upto, kind, defaultPayRate, variantRates,
+      cap, afterRate:cap ? (cap.after_by_store?.[store?.id] ?? cap.after_rate)+extra : payRate+extra,
+      src:(ch?.card && m.charge_rates?.[ch.card.id]?.src) || rule?.src || m.src, charger:ch?.card});
+
   }
   // 条件が確認できているものを先に、その中で還元率の高い順
-  list.sort((a,b)=>(a.unsure - b.unsure) || (sameRate(a.rate,b.rate) ? 0 : b.rate-a.rate) || (prioOf(a.m) - prioOf(b.m)) || (!!b.m.star_yen - !!a.m.star_yen) || a.m.name.localeCompare(b.m.name,"ja"));
+  list.sort(compareRows(wallet));
   return list;
 }
 
@@ -523,13 +624,24 @@ function rank(store){
 const $ = s => document.querySelector(s);
 function esc(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 
+function rateLabel(r){
+  if (r.unsure) return "未確認";
+  if (r.kind==="relative") return "商品表示率 " + (r.rate>=0?"+":"−") + fmt(Math.abs(r.rate)) + "%ポイント";
+  return fmt(r.rate) + (r.kind==="discount" ? "%引き" : "%");
+}
+function amountLabel(r, amt){
+  if (!amt || r.unsure || r.kind==="relative") return "";
+  const n = Math.floor(amt*r.rate/100).toLocaleString();
+  return r.kind==="discount" ? "対象商品の本体価格で約"+n+"円引き" : "約"+n+"pt";
+}
 function listHtml(ranking){
   const amt = Math.max(0, Number($("#amt").value)||0);
   if (!ranking.length) return `<div class="empty">このお店で使える支払い方法が登録されていません。</div>`;
   return ranking.map((r,i)=>{
-    const pts = Math.floor(amt * r.rate / 100);
-    const top = i===0 && r.rate>0 && !r.unsure;
-    const src = r.m.src ? `<div>出典：<a href="${r.m.src}" target="_blank" rel="noopener">公式サイト</a>（${esc(CHECKED)}）</div>` : "";
+
+    const top = i===0 && !r.unsure;
+    const link = sourceLink(r.src || r.m.src, "公式サイト");
+    const src = link ? `<div>出典：${link}（${esc(CHECKED)}）</div>` : "";
     return `<div class="rank ${top?"top":""}">
       <div class="num">${i+1}</div>
       <div>
@@ -539,7 +651,7 @@ function listHtml(ranking){
         <div class="bd">${r.parts.map(p=>`<span class="${p.cls||""}">${esc(p.t)}</span>`).join("")}</div>
         ${r.notes.length || src ? `<details class="note"><summary>${r.notes.length?"ⓘ 条件・注意点を見る":"出典を見る"}</summary>${r.notes.map(n=>`<div>・${esc(n)}</div>`).join("")}${src}</details>` : ""}
       </div>
-      <div class="rate"><b>${fmt(r.rate)}%</b><div class="pts">${amt?`約${pts.toLocaleString()}pt`:""}</div></div>
+      <div class="rate"><b>${rateLabel(r)}</b><div class="pts">${amountLabel(r,amt)}</div></div>
     </div>`;
   }).join("");
 }
@@ -552,8 +664,9 @@ const AI_DAYS = 7;
 let aiBusy = "";
 function aiKey(q){ return norm(q); }
 function aiCached(q){
-  const c = (state.ai || {})[aiKey(q)];
-  return (c && Date.now() - c.at < AI_DAYS*864e5) ? c.res : null;
+  if (!Object.hasOwn(state.ai,aiKey(q))) return null;
+  const c = state.ai[aiKey(q)];
+  return (c && Date.now() - c.at < (c.res.found ? AI_DAYS*864e5 : 3600000)) ? c.res : null;
 }
 function pcName(id){ const p = POINT_CARDS.find(x=>x.id===id); return p ? p.name.replace("カード","") : id; }
 
@@ -577,7 +690,7 @@ function rankAI(res){
     list.push({m, rate: rate + pcAdd, parts, notes, unsure});
   }
   // 使えることが確認できたものを先に、その中で還元率の高い順
-  list.sort((a,b)=> (a.unsure - b.unsure) || (sameRate(a.rate,b.rate) ? 0 : b.rate - a.rate) || (prioOf(a.m) - prioOf(b.m)) || a.m.name.localeCompare(b.m.name,"ja"));
+  list.sort(compareRows(activeMethods()));
   return list;
 }
 
@@ -595,7 +708,7 @@ function renderUnknown(q){
     if (res.summary) html += `<p class="note" style="margin-top:0">${esc(res.summary)}</p>`;
     html += listHtml(rankAI(res));
     if (res.sources.length){
-      html += `<div class="sources">参考にしたページ：${res.sources.map(s=>`<div>・<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a></div>`).join("")}</div>`;
+      html += `<div class="sources">参考にしたページ：${res.sources.map(s=>sourceLink(s.url,s.title)).filter(Boolean).map(a=>`<div>・${a}</div>`).join("")}</div>`;
     }
     html += `</div>`;
     $("#result").innerHTML = html; return;
@@ -629,13 +742,15 @@ $("#modal").addEventListener("click", e=>{ if (e.target.id==="modal") $("#modal"
 
 async function lookupAI(q){
   if (!LOOKUP_URL || aiBusy) return;
+  const code = window.prompt("AI検索の利用コードを入力してください");
+  if (!code) return;
   aiBusy = aiKey(q); doSearch();
   try {
-    const r = await fetch(LOOKUP_URL, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({store:q})});
+    const r = await fetch(LOOKUP_URL, {method:"POST", redirect:"error", headers:{"Content-Type":"application/json", Authorization:"Bearer "+code.trim()}, body: JSON.stringify({store:q})});
     const d = await r.json().catch(()=>({}));
     if (!r.ok) throw new Error(d.error || `エラー（${r.status}）`);
-    state.ai = state.ai || {};
-    state.ai[aiKey(q)] = {res:d, at:Date.now()};
+    if (!validAI(d)) throw new Error("調査結果の形式を確認できません");
+    state.ai = {...state.ai, [aiKey(q)]:{res:d, at:Date.now()}};
     const keys = Object.keys(state.ai).sort((a,b)=>state.ai[b].at - state.ai[a].at);
     keys.slice(30).forEach(k=>delete state.ai[k]);  // 端末に残すのは最近の30件まで
     save();
@@ -653,16 +768,22 @@ async function lookupAI(q){
 /* ============ お店タブ：全店一覧 ============ */
 const openIds = new Set();
 let activeJump = "";
-function bestOf(list){ return list.find(r=>!r.unsure) || list[0] || null; }
+function bestOf(list){ return list.find(r=>!r.unsure) || null; }
+function scenarioPicker(s){
+  if (!s.scenarios) return "";
+  return '<label>比較条件 <select class="store-pick" data-scenario="'+s.id+'">'+s.scenarios.map(x=>
+    '<option value="'+esc(x.id)+'" '+(x===scenarioOf(s)?"selected":"")+'>'+esc(x.label)+'</option>').join("")+'</select></label>';
+}
 function storeDetailHtml(s){
   const op = s.own_points;
+  const scenarios = scenarioPicker(s);
   const ownNote = (s.note ? `<p class="note" style="margin-top:0">${esc(s.note)}</p>` : "")
     + (op && op.note ? `<p class="note" style="margin-top:0">${esc(op.note)}</p>` : "");
   const appSel = op && op.app ? `<div class="seg"><span>${esc(op.app.label)}の提示</span>
       <button data-app="${s.id}" data-v="1" class="${appShown(s)?"on":""}">する</button>
       <button data-app="${s.id}" data-v="0" class="${appShown(s)?"":"on"}">しない</button></div>` : "";
   const usual = state.usual[s.id] ? `<div class="usual-box">${favLines(s)}</div>` : "";
-  return `${ownNote}${appSel}${usual}${listHtml(rank(s))}`;
+  return `${scenarios}${ownNote}${appSel}${usual}${listHtml(rank(s))}`;
 }
 // ctx：どの一覧の行か（fav＝よく行くお店、q＝検索結果、cat＝ジャンル別）。同じお店が2か所にあっても、押した方だけ開く
 function rowHtml(s, ctx="cat"){
@@ -673,17 +794,18 @@ function rowHtml(s, ctx="cat"){
   const needDetail = !!(top && top.notes && top.notes.length && !(top.how && top.how.length));
   let gain = "";
   const u = usualOf(s, list);
-  if (u && top && top.rate > u.rate){
-    gain = `<span class="srow-gain">いつもの払い方より月 +${yenStr(spendOf(s.id)*(top.rate-u.rate)/100)}円</span>`;
+  if (u && top && !u.row.unsure && top.kind!=="relative"){
+    const improvement = (simulate(activeMethods(),[s]).total - simulate(activeMethods(),[s],true).total)/12;
+    if (improvement>0.5) gain = '<span class="srow-gain">この店だけで月平均 +約'+yenStr(improvement)+'円分</span>';
   }
   return `<div class="srow ${open?"open":""}" id="${ctx==="cat"?`row-${s.id}`:`row-${ctx}-${s.id}`}">
     <div class="srow-head">
       <button class="star ${fav?"on":""}" data-star="${s.id}" aria-pressed="${fav}" aria-label="${esc(s.name)}をよく行くお店にする">${fav?"★":"☆"}</button>
       <button class="srow-main" data-toggle="${key}" aria-expanded="${open}">
         <span class="mname">${esc(s.name)}</span>
-        <span class="srow-best">${!top ? "使える支払い方法が登録されていません"
+        <span class="srow-best">${!top ? "確認済みの払い方がありません"
           : s.own_points && s.own_points.relative ? `1位 ${esc(top.m.name)}（ポイント率は商品ごと）`
-          : `1位 ${esc(top.m.name)} <b>${fmt(top.rate)}%</b>${top.upto ? `（${esc(top.upto.label)}最大${fmt(top.upto.rate)}%）` : ""}`}</span>
+          : `1位 ${esc(top.m.name)} <b>${rateLabel(top)}</b>${top.upto ? `（${esc(top.upto.label)}最大${fmt(top.upto.rate)}%）` : ""}`}</span>
         ${top && top.how && top.how.length ? `<span class="srow-how">${esc(top.how.join("＋"))}</span>` : ""}
         ${gain}
         ${needDetail && !open ? `<span class="srow-cond">ⓘ 条件あり</span>` : ""}
@@ -752,7 +874,7 @@ function renderMethods(){
       if (m.charge){
         const sel = state.charge[m.id] || "auto";
         const opts = [`<option value="auto" ${sel==="auto"?"selected":""}>自動（登録したカードで一番得なもの）</option>`]
-          .concat(chargeCards().map(c=>`<option value="${c.id}" ${sel===c.id?"selected":""}>${esc(c.name)}（チャージで${fmt(chargeRateOf(m,c))}%）</option>`))
+          .concat(chargeCards().map(c=>`<option value="${c.id}" ${sel===c.id?"selected":""}>${esc(c.name)}（${chargeRateOf(m,c)===null?"付与未確認":"チャージで"+fmt(chargeRateOf(m,c))+"%"}）</option>`))
           .concat([`<option value="cash" ${sel==="cash"?"selected":""}>現金など（ポイントなし）</option>`]).join("");
         html += `<div class="method">
           <input type="checkbox" data-m="${m.id}" ${on?"checked":""} aria-label="${esc(m.name)}">
@@ -766,7 +888,7 @@ function renderMethods(){
       html += `<div class="method">
         <input type="checkbox" data-m="${m.id}" ${on?"checked":""} aria-label="${esc(m.name)}">
         <div class="grow"><div class="mname">${esc(m.name)}</div><div class="mkind">${esc(m.kind)}・標準 ${fmt(m.base)}%</div></div>
-        ${m.id==="cash"?"":`<label class="row" style="gap:4px"><input class="ov" type="number" step="0.1" min="0" data-ov="${m.id}" placeholder="${fmt(m.base)}" value="${ov!==undefined?esc(ov):""}"><span>%</span></label>`}
+        ${m.id==="cash"?"":`<label class="row" style="gap:4px"><input class="ov" type="number" step="0.1" min="0" max="100" data-ov="${m.id}" placeholder="${fmt(m.base)}" value="${ov!==undefined?esc(ov):""}"><span>%</span></label>`}
       </div>`;
     }
   }
@@ -790,15 +912,11 @@ function renderPrio(){
 function usualOptions(s, list){
   const out = [];
   for (const r of list){
-    const storeRule = RULES.find(x=>x.m===r.m.id && x.s===s.id);
-    // お店の特典に払い方別の率がある場合（三井住友の対象店など）、またはカード自体が払い方で率が変わる場合（セゾンパールなど）
-    const vrates = storeRule && storeRule.variants ? storeRule.variants
-                 : (!storeRule || !storeRule.override) && r.m.variant_rates ? r.m.variant_rates : null;
-    const headRate = storeRule && storeRule.variants ? storeRule.rate : baseOf(r.m);
+    const vrates = r.variantRates;
     if (vrates && r.m.variants){
       for (const v of r.m.variants){
         const vr = v.id in vrates ? vrates[v.id] : null;
-        const rate = vr===null ? r.rate : r.rate - headRate + vr;
+        const rate = (vr ?? r.defaultPayRate) + r.extra;
         out.push({value:`${r.m.id}:${v.id}`, label:`${r.m.name}（${v.label}）`, rate, row:r});
       }
     } else {
@@ -810,26 +928,21 @@ function usualOptions(s, list){
 function usualOf(s, list){
   let v = state.usual[s.id]; if (!v) return null;
   // 以前の保存値：「カードのタッチ決済」「差し込み・iD」は「カードのタッチ・差し込み・iD」にまとめた
-  v = v.replace(/:(card_touch|insert)$/, ":card");
+  v = v.replace(/^(smbc_nl|smbc_gold_nl|olive):(card_touch|insert)$/, "$1:card");
   const opts = usualOptions(s, list);
-  // 払い方の指定がない保存値などは、そのカードの最初の払い方として扱う
-  return opts.find(o=>o.value===v) || opts.find(o=>o.value.split(":")[0]===v.split(":")[0]) || null;
+  return opts.find(o=>o.value===v) || null;
 }
 const yenStr = v => Math.round(v).toLocaleString();
 function favLines(s){
-  const list = rank(s);
-  const top = list.find(r=>!r.unsure) || list[0];
-  if (!top) return `<div class="fav-best">使える支払い方法が登録されていません</div>`;
-  const spend = spendOf(s.id);
-  const usual = usualOf(s, list);
-  const topOpt = usualOptions(s, [top])[0];
-  const topName = topOpt ? topOpt.label : top.m.name;
-  const topLine = (prefix) => `${prefix}：${esc(topName)} <b>${fmt(top.rate)}%</b>（月 約${yenStr(spend*top.rate/100)}円分`;
-  if (!usual) return `<div class="fav-best">${topLine("おすすめ")}）</div>`;
-  const usualLine = `<div class="fav-best">いつもの払い方：${esc(usual.label)} ${fmt(usual.rate)}%（月 約${yenStr(spend*usual.rate/100)}円分）</div>`;
-  if (usual.rate >= top.rate) return usualLine + `<div class="fav-best"><b>いつもの払い方がいちばんおトクです</b></div>`;
-  const diff = spend*(top.rate-usual.rate)/100;
-  return usualLine + `<div class="fav-best">${topLine("おすすめ")}・<b>+${yenStr(diff)}円</b>）</div>`;
+  const list=rank(s), top=bestOf(list), usual=usualOf(s,list);
+  if (!top) return '<div class="fav-best">確認済みの払い方がありません</div>';
+  let html='<div class="fav-best">おすすめ：'+esc(top.m.name)+' '+rateLabel(top)+'</div>';
+  if (usual) html += '<div class="fav-best">いつもの払い方：'+esc(usual.label)+' '+rateLabel({...usual.row,rate:usual.rate})+'</div>';
+  if (top.kind==="relative") return html+'<div class="note">商品ごとの表示率が必要なため、獲得額は未算定です。</div>';
+  const estimate=simulate(activeMethods(),[s]);
+  const gain=estimate.total-simulate(activeMethods(),[s],true).total;
+  return html+'<div class="note">このお店だけで試算：月平均 約'+yenStr(estimate.total/12)+'円分'+
+    (usual && gain>0.5?'（いつもの払い方から +約'+yenStr(gain/12)+'円分）':'')+'</div>';
 }
 function renderFavs(){
   $("#storelist").innerHTML = STORES.map(s=>`<option value="${esc(s.name)}">`).join("");
@@ -839,7 +952,7 @@ function renderFavs(){
     const usable = rank(s);
     const curOpt = usualOf(s, usable);
     const cur = curOpt ? curOpt.value : "";
-    const opts = `<option value="">いつもの払い方を選ぶ</option>` + usualOptions(s, usable).map(o=>
+    const opts = `<option value="">${state.usual[id] && !cur ? "払い方を再選択" : "いつもの払い方を選ぶ"}</option>` + usualOptions(s, usable).map(o=>
       `<option value="${esc(o.value)}" ${cur===o.value?"selected":""}>${esc(o.label)}</option>`).join("");
     return `<div class="fav-store">
       <div class="fav-head">
@@ -847,13 +960,18 @@ function renderFavs(){
         <label class="spend">月<input type="number" min="0" step="1000" data-spend="${id}" value="${spendOf(id)}" aria-label="${esc(s.name)}の月の利用額">円</label>
         <button class="x" data-del="${id}" aria-label="${esc(s.name)}を削除">×</button>
       </div>
-      <select class="store-pick usual" data-usual="${id}" aria-label="${esc(s.name)}でのいつもの払い方">${opts}</select>
+      ${scenarioPicker(s)}<select class="store-pick usual" data-usual="${id}" aria-label="${esc(s.name)}でのいつもの払い方">${opts}</select>
       <div id="fav-lines-${id}">${favLines(s)}</div>
     </div>`;
   }).join("");
   renderSuggest();
 }
 
+document.addEventListener("change", e=>{
+  const id = e.target.dataset.scenario;
+  if (!id) return;
+  state.scenario[id] = e.target.value; save(); renderList(); renderFavs();
+});
 /* ============ イベント ============ */
 document.querySelectorAll("nav.tabs button").forEach(b=>b.addEventListener("click",()=>showTab(b.dataset.tab)));
 function showTab(t){
@@ -915,14 +1033,14 @@ $("#methodlist").addEventListener("change", e=>{
   if (id){
     state.methods = e.target.checked ? [...new Set([...state.methods,id])] : state.methods.filter(x=>x!==id); save();
     // チャージ方法の選択肢（登録カード一覧）を最新にする
-    if (METHODS.some(m=>m.charge)) renderMethods();
+    renderMethods();
   }
   const ch = e.target.dataset.charge;
   if (ch){ state.charge[ch] = e.target.value; save(); }
 });
 $("#methodlist").addEventListener("input", e=>{
   const id = e.target.dataset.ov;
-  if (id){ if (e.target.value==="") delete state.overrides[id]; else state.overrides[id]=e.target.value; save(); }
+  if (id){ if (e.target.value==="") delete state.overrides[id]; else if(validNumber(e.target.value,100)) state.overrides[id]=e.target.value; save(); }
 });
 $("#prioList").addEventListener("click", e=>{
   const b = e.target.closest("button[data-prio]"); if (!b) return;
@@ -974,10 +1092,31 @@ $("#favlist").addEventListener("click", e=>{
   }
 });
 
-fetch("data.json", {cache:"no-cache"})
-  .then(r=>{ if(!r.ok) throw new Error(r.status); return r.json(); })
-  .then(d=>{ loadData(d); renderFavPicker(); renderMethods(); renderList(); renderChecked(d); })
-  .catch(()=>{ $("#result").innerHTML = `<div class="banner">還元率データ（data.json）を読み込めませんでした。時間をおいて再読み込みしてください。</div>`; });
+async function start(){
+  let data;
+  try {
+    const response=await fetch("data.json", {cache:"no-cache"});
+    if (!response.ok) throw new Error("通信エラー");
+    data=await response.json();
+  } catch {
+    $("#result").textContent="還元率データを読み込めませんでした。時間をおいて再読み込みしてください。";
+    return;
+  }
+  try {
+    loadData(data);
+    const recovered = restore();
+    renderFavPicker(); renderMethods(); renderList(); renderChecked(data);
+    if (recovered){
+      save();
+      const msg=document.createElement("p"); msg.className="banner";
+      msg.textContent="保存設定を復旧しました。読み取れた登録内容は引き継いでいます。";
+      document.querySelector("#tab-list").prepend(msg);
+    }
+  } catch {
+    $("#result").textContent="店舗データの形式または画面の初期化に問題があります。";
+  }
+}
+start();
 function renderFavPicker(){ $("#favpick").innerHTML = storePickHtml("ジャンルから選んで追加"); }
 function renderChecked(d){ const el=$("#checked"); if(el && d.updated) el.textContent = `データ最終更新：${d.updated}`; }
 </script>

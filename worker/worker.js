@@ -19,65 +19,136 @@ const CACHE_SECONDS = 7 * 24 * 60 * 60; // 同じお店は7日間、前回の結
 const POINT_CARD_IDS = ["d", "rakuten", "ponta", "v"];
 const SCOPES = ["national", "regional", "local", "unknown"];
 
+const MAX_BODY = 2048;
+
+function positiveLimit(value) {
+  const n = Number(value);
+  return Number.isSafeInteger(n) && n > 0 ? n : 0;
+}
+
+async function readLookup(request) {
+  if (Number(request.headers.get("Content-Length")) > MAX_BODY || !request.body) return null;
+  const reader = request.body.getReader(), bytes = new Uint8Array(MAX_BODY);
+  let size = 0;
+  try {
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      if (size + value.length > MAX_BODY) { await reader.cancel(); return null; }
+      bytes.set(value, size);
+      size += value.length;
+    }
+    const body = JSON.parse(new TextDecoder().decode(bytes.subarray(0, size)));
+    if (typeof body?.store !== "string") return null;
+    const store = body.store.normalize("NFKC").trim().replace(/\\s+/g, " ");
+    return store && store.length <= 40 ? store : null;
+  } catch { return null; }
+}
+
+async function identify(request, credentials) {
+  const auth = request.headers.get("Authorization") || "";
+  if (!/^Bearer [A-Za-z0-9_-]{32,128}$/.test(auth)) return null;
+  const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(auth.slice(7)));
+  const hex = Array.from(new Uint8Array(hash), b => b.toString(16).padStart(2, "0")).join("");
+  const users = JSON.parse(credentials);
+  return Object.hasOwn(users, hex) && /^[a-zA-Z0-9_-]{1,64}$/.test(users[hex]) ? users[hex] : null;
+}
+
 export default {
-  async fetch(request, env, ctx) {
-    const origin = request.headers.get("Origin") || "";
-    const cors = {
-      "Access-Control-Allow-Origin": ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-      "Vary": "Origin",
-    };
-    if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
-    if (request.method !== "POST") return json({ error: "POSTで呼び出してください" }, 405, cors);
-    if (!ALLOWED_ORIGINS.includes(origin)) return json({ error: "許可されていない呼び出し元です" }, 403, cors);
-    if (!env.ANTHROPIC_API_KEY) return json({ error: "APIキーが設定されていません" }, 500, cors);
-
-    let body;
-    try { body = await request.json(); } catch { return json({ error: "リクエストの形式が正しくありません" }, 400, cors); }
-    const store = String(body.store || "").normalize("NFKC").trim().replace(/\s+/g, " ");
-    if (!store || store.length > 40) return json({ error: "お店の名前は1〜40文字で入力してください" }, 400, cors);
-
-    // キャッシュ確認（同じお店なら API を呼ばない）
-    const cache = caches.default;
-    const cacheKey = new Request("https://otoku-pay-cache.invalid/lookup?s=" + encodeURIComponent(store.toLowerCase()));
-    const hit = await cache.match(cacheKey);
-    if (hit) {
-      const r = new Response(hit.body, hit);
-      for (const [k, v] of Object.entries(cors)) r.headers.set(k, v);
-      r.headers.set("X-Cache", "HIT");
-      return r;
-    }
-
-    let data;
+  async fetch(request, env) {
+    const origin = request.headers.get("Origin");
+    if (!ALLOWED_ORIGINS.includes(origin)) return json({error:"呼び出し元が許可されていません"}, 403);
+    const cors = {"Access-Control-Allow-Origin":origin, "Access-Control-Allow-Methods":"POST, OPTIONS",
+                  "Access-Control-Allow-Headers":"Content-Type, Authorization", "Vary":"Origin", "Cache-Control":"no-store"};
+    if (request.method === "OPTIONS") return new Response(null, {status:204, headers:cors});
+    if (request.method !== "POST") return json({error:"POSTで呼び出してください"}, 405, cors);
+    if (!env.LOOKUP || !env.LOOKUP_USERS || !env.ANTHROPIC_API_KEY || !positiveLimit(env.USER_DAILY_CALLS)
+        || !positiveLimit(env.MONTHLY_CALLS) || !positiveLimit(env.MONTHLY_BUDGET_CENTS)
+        || !positiveLimit(env.CALL_RESERVE_CENTS)) return json({error:"AI検索は準備中です"}, 503, cors);
     try {
-      data = await (await fetch(DATA_URL, { cf: { cacheTtl: 3600 } })).json();
+      const user = await identify(request, env.LOOKUP_USERS);
+      if (!user) return json({error:"有効な利用コードを入力してください"}, 401, cors);
+      const store = await readLookup(request);
+      if (!store) return json({error:"店名を1〜40文字で指定してください"}, 400, cors);
+      const coordinator = env.LOOKUP.get(env.LOOKUP.idFromName("paid-search"));
+      const r = await coordinator.fetch("https://lookup.internal/", {method:"POST", body:JSON.stringify({user, store})});
+      return new Response(r.body, {status:r.status, headers:{...cors, "Content-Type":"application/json; charset=utf-8"}});
     } catch {
-      return json({ error: "還元率データを読み込めませんでした" }, 502, cors);
+      return json({error:"AI検索を利用できません"}, 503, cors);
     }
-    const methods = data.methods
-      .filter((m) => m.id !== "cash" && !m.only_stores)
-      .map((m) => ({ id: m.id, name: m.name, kind: m.kind, base: m.base }));
-
-    let result;
-    try {
-      const { text, seenUrls } = await askClaude(env, buildPrompt(store, methods));
-      result = sanitize(extractJson(text), methods, seenUrls, store);
-      // 対象外の範囲のお店（地元のお店など）は、調べた中身を返さない
-      const allow = (env.ALLOW_SCOPES || "national").split(",").map((x) => x.trim());
-      if (result.found && !allow.includes(result.chain_scope)) {
-        result = { found: true, blocked: true, query: store, store_name: result.store_name,
-                   chain_scope: result.chain_scope, allowed_scopes: allow, checked_at: result.checked_at };
-      }
-    } catch (e) {
-      return json({ error: "AIでの調査に失敗しました。時間をおいてもう一度お試しください。" }, 502, cors);
-    }
-
-    const resp = json(result, 200, { ...cors, "Cache-Control": `public, max-age=${CACHE_SECONDS}` });
-    if (result.found) ctx.waitUntil(cache.put(cacheKey, resp.clone()));
-    return resp;
   },
 };
+
+class LimitReached extends Error {}
+
+export class LookupCoordinator {
+  constructor(ctx, env) {
+    this.ctx = ctx;
+    this.env = env;
+    this.pending = new Map();
+  }
+
+  async reserve(user) {
+    const day = new Date().toISOString().slice(0, 10), month = day.slice(0, 7);
+    const daily = "user:" + user, global = "monthly";
+    await this.ctx.storage.transaction(async tx => {
+      const previous = await tx.get([daily, global]);
+      const count = (key, period) => previous.get(key)?.period === period ? previous.get(key).count : 0;
+      const calls = count(daily, day), total = count(global, month);
+      const reserved = previous.get(global)?.period === month ? previous.get(global).reservedCents : 0;
+      const nextCost = reserved + positiveLimit(this.env.CALL_RESERVE_CENTS);
+      if (!Number.isSafeInteger(nextCost) || nextCost > positiveLimit(this.env.MONTHLY_BUDGET_CENTS)) throw new LimitReached();
+      if (calls >= positiveLimit(this.env.USER_DAILY_CALLS) || total >= positiveLimit(this.env.MONTHLY_CALLS))
+        throw new LimitReached();
+      await tx.put({[daily]:{period:day, count:calls+1}, [global]:{period:month, count:total+1, reservedCents:nextCost}});
+    });
+  }
+
+  async fetch(request) {
+    const {user, store} = await request.json();
+    const key = (this.env.ALLOW_SCOPES || "national") + ":" + store.toLowerCase();
+    if (!this.pending.has(key)) {
+      const work = this.lookup(key, store, user).finally(() => this.pending.delete(key));
+      this.pending.set(key, work);
+    }
+    try { return json(await this.pending.get(key), 200); }
+    catch (e) {
+      return e instanceof LimitReached ? json({error:"AI検索の利用上限に達しました"}, 429)
+        : json({error:"AIでの調査に失敗しました"}, 502);
+    }
+  }
+
+  async lookup(key, store, user) {
+    const cacheKey = "cache:" + key;
+    const hit = await this.ctx.storage.get(cacheKey);
+    if (hit && hit.expires > Date.now()) return hit.result;
+    const response = await fetch(DATA_URL, {cf:{cacheTtl:3600}});
+    if (!response.ok) throw new Error("data unavailable");
+    const data = await response.json();
+    const methods = data.methods.filter(m => m.id !== "cash" && !m.only_stores);
+    const {text, seenUrls} = await askClaude(this.env, buildPrompt(store, methods), () => this.reserve(user));
+    let result = sanitize(extractJson(text), methods, seenUrls, store);
+    const allow = (this.env.ALLOW_SCOPES || "national").split(",").map(x => x.trim());
+    if (result.found && !allow.includes(result.chain_scope)) {
+      result = {found:true, blocked:true, query:store, store_name:result.store_name,
+                chain_scope:result.chain_scope, allowed_scopes:allow, checked_at:result.checked_at};
+    }
+    await this.ctx.storage.put(cacheKey, {result, expires:Date.now() + (result.found ? CACHE_SECONDS : 3600)*1000});
+    if (await this.ctx.storage.getAlarm() === null) await this.ctx.storage.setAlarm(Date.now() + 86400000);
+    return result;
+  }
+
+  async alarm() {
+    let startAfter;
+    do {
+      const entries = await this.ctx.storage.list({prefix:"cache:", limit:100, ...(startAfter ? {startAfter} : {})});
+      const expired = [...entries].filter(([,v]) => v.expires <= Date.now()).map(([k]) => k);
+      if (expired.length) await this.ctx.storage.delete(expired);
+      startAfter = entries.size === 100 ? [...entries.keys()].pop() : null;
+    } while (startAfter);
+    await this.ctx.storage.setAlarm(Date.now() + 86400000);
+  }
+}
 
 function buildPrompt(store, methods) {
   const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
@@ -107,7 +178,7 @@ ${list}
  "sources": [{"title": "ページ名", "url": "https://..."}]}`;
 }
 
-async function askClaude(env, prompt) {
+async function askClaude(env, prompt, reserve) {
   const headers = {
     "x-api-key": env.ANTHROPIC_API_KEY,
     "anthropic-version": "2023-06-01",
@@ -121,6 +192,7 @@ async function askClaude(env, prompt) {
   };
   const seenUrls = new Set();
   for (let i = 0; i < 3; i++) {
+    await reserve();
     const r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers, body: JSON.stringify(body) });
     if (!r.ok) throw new Error(`Claude API ${r.status}`);
     const d = await r.json();
@@ -151,6 +223,7 @@ function extractJson(text) {
 
 /** AIの返答を、アプリが安全に表示できる形に整える */
 function sanitize(r, methods, seenUrls, store) {
+  if (typeof r?.found !== "boolean") throw new Error("invalid search result");
   const ids = new Set(methods.map((m) => m.id));
   const str = (v, n) => (typeof v === "string" ? v.slice(0, n) : "");
   const out = {
@@ -173,7 +246,7 @@ function sanitize(r, methods, seenUrls, store) {
   }
   // 出典は、実際にWeb検索で見たURLだけを残す（AIが作ったURLを出さないため）
   for (const s of Array.isArray(r.sources) ? r.sources : []) {
-    if (typeof s.url === "string" && /^https?:\/\//.test(s.url) && seenUrls.has(s.url)) {
+    if (typeof s.url === "string" && /^https:\/\//.test(s.url) && seenUrls.has(s.url)) {
       out.sources.push({ title: str(s.title, 60) || s.url, url: s.url });
     }
     if (out.sources.length >= 5) break;

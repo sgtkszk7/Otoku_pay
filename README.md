@@ -20,7 +20,7 @@
 
 ## 使い方
 
-`index.html` 1ファイルだけで動きます。ブラウザで直接開くか、GitHub Pagesで公開してください。
+リポジトリ直下を静的サイトとして配信します。ローカルでは `python3 -m http.server 8000` を実行し、ブラウザで `http://localhost:8000/` を開きます。
 
 ## データについて
 
@@ -28,7 +28,7 @@
 
 データは `data.json` で管理しています。
 
-- `methods`：支払い方法（基本還元率・注意書き・出典・公式ドメイン・年会費 `annual_fee_yen`・月の対象上限 `monthly_cap_yen`）
+- `methods`：支払い方法（基本還元率・注意書き・出典・公式ドメイン・年会費 `annual_fee_yen`・上限 `cap` の期間・対象額・超過後の率）
 - `stores`：お店（名前・別名・使えるポイントカード）
 - `rules`：お店ごとの特典（そのお店での合計還元率）
 
@@ -36,14 +36,9 @@
 
 `.github/workflows/rate-check.yml` が毎月1日 9:17（日本時間）に `scripts/check_rates.py` を実行します。Actions タブから手動でも実行できます。
 
-1. **Claude** が各決済の公式お知らせ・ニュースを調べ、`data.json` との違いを探す
-2. **ChatGPT** が出典ページを自分で読み、Claude の結論を見ずに還元率を答える
-3. **機械チェック**：還元率が0〜20%か、出典が公式サイトか、適用日を過ぎているか
-4. すべて一致した変更だけ `data.json` に反映し、**Pull Request** を作成。食い違いなどは「要確認」として本文に記載
+対象の決済・店舗ごとに別のジョブで調査し、結果を成果物として保存します。照合には許可済みの公式HTTPSページで取得した本文を使います。対象・率・条件・適用日が一致しない変更は要確認です。既存の店舗ルールの変更も、表示文・払い方・上限を含めて確認してから反映します。ポイントカードは1枚単位で扱い、終了にはそのカードの終了を示す公式本文と独立照合が必要です。
 
-あわせて、**お店のポイントカード**（dポイント・楽天・Ponta・Vの導入・終了・付与率の変更）も同じ流れでチェックします。出典は、お店かポイント運営会社の公式サイト（`data.json` の `official_domains`）のときだけ自動で反映します。ネット通販は対象外です。
-
-- 決済だけ・お店だけを調べたいとき：`ONLY=paypay,smbc_nl`（決済ID）、`ONLY_STORES=mos,famima`（お店ID）、`SKIP_STORES=1`（お店を省略）
+集約ジョブは調査・照合・失敗件数を表示します。一部失敗はジョブの失敗になります。Actions の「Re-run failed jobs」で未完了・失敗した対象を再調査できます。ローカル実行では `ONLY`（決済ID）、`ONLY_STORES`（店舗ID）、`SKIP_STORES=1` で対象を絞れます。
 
 Merge すると GitHub Pages に自動で反映されます。
 
@@ -58,17 +53,19 @@ Merge すると GitHub Pages に自動で反映されます。
 
 `worker/worker.js` は、アプリから店名を受け取り、Claude（Web検索つき）で調べて結果を返す中継プログラムです。APIキーをアプリ（誰でも見られる）に置かないために使います。
 
-- 呼び出せるのは `https://sgtkszk7.github.io` からだけ
-- 同じお店の結果は7日間キャッシュ（API代の節約）
-- AIの返答は、還元率0〜20%・既知の支払い方法・実際に検索したURLだけに絞ってから返す
-- 調べられるのは全国チェーンのみ。AIが「地域チェーン」「地元のお店」と判断した場合は中身を返さず、アプリに注意のポップアップを出す（Workerの変数 `ALLOW_SCOPES` を `national,regional` にすると地域チェーンも対象）
+AI検索を使う人には個別の利用コードを発行します。通常の店舗一覧・見直しは利用コードなしで使えます。全利用者で1つの Durable Object が利用枠を管理します。同じ店舗への同時検索は1つにまとめ、結果を7日間、該当なしを1時間保存します。
 
-### 設定手順
+### Workerの設定
 
-1. Cloudflare のダッシュボード →「Workers & Pages」→「Create」→「Start with Hello World!」で Worker を作る
-2.「Edit code」で `worker/worker.js` の中身に置き換えて「Deploy」
-3. Worker の「Settings」→「Variables and Secrets」で `ANTHROPIC_API_KEY` を **Secret** として追加
-4. 表示された Worker の URL（`https://〜.workers.dev`）を `data.json` の `lookup_endpoint` に入れる
+1. `worker/wrangler.toml` の Worker 名を自分の環境に合わせます。Durable Object のバインディングと SQLite マイグレーションを含めて配備します。
+2. `ANTHROPIC_API_KEY` を Worker の Secret に登録します。利用者ごとに `python3 -c 'import secrets; print(secrets.token_urlsafe(32))'` でランダムな利用コードを作成し、本人に個別に渡します。平文コードと鍵はリポジトリ・公開ページには保存しません。
+3. 各コードを改行なしの UTF-8 バイト列として SHA-256 にかけます。`LOOKUP_USERS` Secret に、16進小文字のダイジェストをキー、利用者ID（英数字・ハイフン・アンダースコア）を値とする JSON オブジェクトを登録します。失効時は該当項目を削除します。
+4. `USER_DAILY_CALLS`（利用者別・UTC日次）と `MONTHLY_CALLS`（全体・UTC月次）に正の整数を設定します。`MONTHLY_BUDGET_CENTS` は月の予約予算（米セント）、`CALL_RESERVE_CENTS` は1回の最大見込み費用です。選んだモデルの最大入力、出力、Web検索料金を含む上限額を設定してください。継続・失敗分も予約を消費します。予約額による停止のため、実請求額との間には差が生じます。いずれかが未設定または0なら有料検索は停止します。
+5. `worker/` から Wrangler で配備し、公開URLを `data.json` の `lookup_endpoint` に設定します。利用者は検索時に自分のコードを入力します。`ALLOW_SCOPES` の既定値は全国チェーン（`national`）です。
+
+### 回帰テスト
+
+リポジトリ直下で `node --test tests/*.test.mjs` と `python3 -m unittest discover -s tests` を実行します。テストは模擬APIを使います。
 
 ## 今後の予定
 
