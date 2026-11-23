@@ -202,11 +202,12 @@ function loadData(d){
 
 /* ============ 保存 ============ */
 const KEY = "otoku-pay-v1";
-let state = {methods:[], overrides:{}, pcs:[], favs:[], spend:{}, app:{}};
+let state = {methods:[], overrides:{}, pcs:[], favs:[], spend:{}, app:{}, charge:{}};
 const DEFAULT_SPEND = 3000;
 try { const s = JSON.parse(localStorage.getItem(KEY)); if (s) state = Object.assign(state, s); } catch(e){}
 if (!state.spend) state.spend = {};
 if (!state.app) state.app = {};
+if (!state.charge) state.charge = {};
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){} }
 
 /* ============ 検索 ============ */
@@ -260,14 +261,25 @@ function ownPoint(m, store){
   return {rate:v, name:o.name, relative:!!o.relative, cond};
 }
 /* チャージして使う支払い方法（スタバカードなど）：チャージに使うクレジットカードのポイントを足す */
+function chargeCards(){
+  return METHODS.filter(c=>c.group==="クレジットカード" && !c.only_stores &&
+    (state.methods.length ? state.methods.includes(c.id) : true));
+}
+function chargeRateOf(m, c){
+  return (m.charge_rates && typeof m.charge_rates[c.id]==="number") ? m.charge_rates[c.id] : baseOf(c);
+}
 function chargeSource(m){
   if (!m.charge) return null;
-  const cards = METHODS.filter(c=>c.group==="クレジットカード" && !c.only_stores &&
-    (state.methods.length ? state.methods.includes(c.id) : true));
+  const sel = state.charge[m.id] || "auto";
+  if (sel === "cash") return {card:null, name:"現金など（ポイントなし）", rate:0, auto:false};
+  if (sel !== "auto"){
+    const c = chargeCards().find(x=>x.id===sel);  // 登録を外したカードなら「自動」に戻る
+    if (c) return {card:c, name:c.name, rate:chargeRateOf(m, c), auto:false};
+  }
   let best = null;
-  for (const c of cards){
-    const r = (m.charge_rates && typeof m.charge_rates[c.id]==="number") ? m.charge_rates[c.id] : baseOf(c);
-    if (!best || r > best.rate) best = {card:c, rate:r};
+  for (const c of chargeCards()){
+    const r = chargeRateOf(m, c);
+    if (!best || r > best.rate) best = {card:c, name:c.name, rate:r, auto:true};
   }
   return best;
 }
@@ -381,8 +393,10 @@ function rank(store){
       const ch = chargeSource(m);
       if (ch){
         rate += ch.rate;
-        parts.push({t:`チャージ：${ch.card.name} +${fmt(ch.rate)}%`, cls:"boost"});
-        notes.push(`${ch.card.name}でチャージした場合のカードのポイントを足しています。`);
+        parts.push({t:`チャージ：${ch.name}${ch.auto?"（自動）":""}${ch.card?` +${fmt(ch.rate)}%`:""}`, cls: ch.card ? "boost" : ""});
+        notes.push(ch.card
+          ? `${ch.card.name}でチャージした場合のカードのポイントを足しています。${ch.auto?"チャージ方法は「支払い方法」タブで選べます。":""}`
+          : "チャージにポイントが付かない方法を選んでいます。チャージ方法は「支払い方法」タブで変えられます。");
       } else {
         notes.push("チャージに使うクレジットカードを登録すると、カードのポイント分も足して計算します。");
       }
@@ -586,6 +600,20 @@ function renderMethods(){
     for (const m of METHODS.filter(x=>x.group===g)){
       const on = state.methods.includes(m.id);
       const ov = state.overrides[m.id];
+      if (m.charge){
+        const sel = state.charge[m.id] || "auto";
+        const opts = [`<option value="auto" ${sel==="auto"?"selected":""}>自動（登録したカードで一番得なもの）</option>`]
+          .concat(chargeCards().map(c=>`<option value="${c.id}" ${sel===c.id?"selected":""}>${esc(c.name)}（チャージで${fmt(chargeRateOf(m,c))}%）</option>`))
+          .concat([`<option value="cash" ${sel==="cash"?"selected":""}>現金など（ポイントなし）</option>`]).join("");
+        html += `<div class="method">
+          <input type="checkbox" data-m="${m.id}" ${on?"checked":""} aria-label="${esc(m.name)}">
+          <div class="grow"><div class="mname">${esc(m.name)}</div><div class="mkind">${esc(m.kind)}・${esc(m.point)}が貯まる</div>
+          ${on ? `<label class="mkind" style="display:block;margin-top:6px">チャージ方法
+            <select class="store-pick" style="margin-top:4px;padding:8px 10px;font-size:14px" data-charge="${m.id}">${opts}</select></label>` : ""}
+          </div>
+        </div>`;
+        continue;
+      }
       html += `<div class="method">
         <input type="checkbox" data-m="${m.id}" ${on?"checked":""} aria-label="${esc(m.name)}">
         <div class="grow"><div class="mname">${esc(m.name)}</div><div class="mkind">${esc(m.kind)}・標準 ${fmt(m.base)}%</div></div>
@@ -639,7 +667,13 @@ $("#result").addEventListener("click", e=>{
 $("#quick").addEventListener("click", e=>{ const q=e.target.dataset.q; if(q){ $("#q").value=q; syncPick(); doSearch(); }});
 $("#methodlist").addEventListener("change", e=>{
   const id = e.target.dataset.m;
-  if (id){ state.methods = e.target.checked ? [...new Set([...state.methods,id])] : state.methods.filter(x=>x!==id); save(); }
+  if (id){
+    state.methods = e.target.checked ? [...new Set([...state.methods,id])] : state.methods.filter(x=>x!==id); save();
+    // チャージ方法の選択肢（登録カード一覧）を最新にする
+    if (METHODS.some(m=>m.charge)) renderMethods();
+  }
+  const ch = e.target.dataset.charge;
+  if (ch){ state.charge[ch] = e.target.value; save(); }
 });
 $("#methodlist").addEventListener("input", e=>{
   const id = e.target.dataset.ov;
