@@ -16,7 +16,7 @@ const DATA_URL = "https://sgtkszk7.github.io/Otoku_pay/data.json";
 const ALLOWED_ORIGINS = ["https://sgtkszk7.github.io"];
 const DEFAULT_MODEL = "claude-sonnet-5-5";
 const CACHE_SECONDS = 7 * 24 * 60 * 60; // 同じお店は7日間、前回の結果を使い回す
-const POINT_CARD_IDS = ["d", "rakuten", "ponta"];
+const POINT_CARD_IDS = ["d", "rakuten", "ponta", "v"];
 const SCOPES = ["national", "regional", "local", "unknown"];
 
 export default {
@@ -97,7 +97,7 @@ ${list}
 - 使えることが確認できたら usable は "yes"、使えないと確認できたら "no"、わからなければ "unknown"。
 - そのお店で、通常より還元率が上がる常設の特典（特約店・パートナー店など）がある場合だけ、rate に合計の還元率(%)を入れてください。なければ rate は null です。
 - 1か月未満の期間限定キャンペーン、抽選、エントリー制の一時的な施策は含めないでください。
-- 提示してポイントが貯まる共通ポイントカードを point_cards に入れてください（d=dポイント, rakuten=楽天ポイント, ponta=Pontaポイント）。わからなければ空の配列。
+- 提示してポイントが貯まる共通ポイントカードを point_cards に入れてください（d=dポイント, rakuten=楽天ポイント, ponta=Pontaポイント, v=Vポイント）。わからなければ空の配列。
 - 推測で埋めないでください。
 
 最後に、次の形のJSONだけを出力してください:

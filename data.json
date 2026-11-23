@@ -242,6 +242,10 @@
     {
       "id": "ponta",
       "name": "Pontaカード"
+    },
+    {
+      "id": "v",
+      "name": "Vポイントカード"
     }
   ],
   "stores": [
@@ -283,7 +287,8 @@
       ],
       "pc": [
         "d",
-        "rakuten"
+        "rakuten",
+        "v"
       ]
     },
     {
@@ -310,7 +315,10 @@
         "スキヤ"
       ],
       "pc": [
-        "rakuten"
+        "d",
+        "ponta",
+        "rakuten",
+        "v"
       ]
     },
     {
@@ -322,7 +330,8 @@
       ],
       "pc": [
         "d",
-        "rakuten"
+        "rakuten",
+        "v"
       ]
     },
     {
@@ -426,7 +435,9 @@
       "alias": [
         "うぇるしあ"
       ],
-      "pc": []
+      "pc": [
+        "v"
+      ]
     },
     {
       "id": "bic",
@@ -685,7 +696,8 @@
         "吉牛"
       ],
       "pc": [
-        "rakuten"
+        "rakuten",
+        "v"
       ]
     },
     {
@@ -697,8 +709,9 @@
         "Jonathan's"
       ],
       "pc": [
+        "d",
         "rakuten",
-        "d"
+        "v"
       ]
     }
   ],
