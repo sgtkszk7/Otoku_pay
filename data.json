@@ -1206,6 +1206,19 @@
       "src": "https://topics.shopping.yahoo.co.jp/notice/archives/202608121855.html"
     },
     {
+      "method": "paypay",
+      "store": "yahoo",
+      "rate": 0.5,
+      "label": "PayPayステップ",
+      "note": "PayPay残高払いは2026年10月から、LINE連携特典が1%減って合計4%（ストアポイント1%を含む）になりました。PayPayカード・PayPayクレジットは合計5%のままです。",
+      "rate_max": 3,
+      "scenario_rates": {
+        "linked": 3
+      },
+      "max_label": "ストアポイントを含む条件達成時",
+      "src": "https://topics.shopping.yahoo.co.jp/notice/archives/202608121855.html"
+    },
+    {
       "method": "aupay",
       "store": "lawson",
       "rate": 0.5,
