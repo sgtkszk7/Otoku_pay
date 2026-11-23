@@ -321,6 +321,7 @@
         "がすと"
       ],
       "pc": [
+        "d",
         "rakuten"
       ]
     },
@@ -660,6 +661,45 @@
         "成城"
       ],
       "pc": []
+    },
+    {
+      "id": "matsuya",
+      "name": "松屋",
+      "cat": "飲食",
+      "alias": [
+        "まつや",
+        "マツヤ",
+        "松屋フーズ"
+      ],
+      "pc": [
+        "d"
+      ]
+    },
+    {
+      "id": "yoshinoya",
+      "name": "吉野家",
+      "cat": "飲食",
+      "alias": [
+        "よしのや",
+        "ヨシノヤ",
+        "吉牛"
+      ],
+      "pc": [
+        "rakuten"
+      ]
+    },
+    {
+      "id": "jonathan",
+      "name": "ジョナサン",
+      "cat": "飲食",
+      "alias": [
+        "じょなさん",
+        "Jonathan's"
+      ],
+      "pc": [
+        "rakuten",
+        "d"
+      ]
     }
   ],
   "rules": [
@@ -962,6 +1002,76 @@
       "rate": 0.5,
       "label": "一部店舗は不可",
       "note": "サンマルクカフェの一部店舗ではQRコード決済が使えません。"
+    },
+    {
+      "method": "smbc_nl",
+      "store": "yoshinoya",
+      "rate": 7.0,
+      "label": "対象店でスマホタッチ7%",
+      "note": "商業施設内の店舗など一部対象外あり。カード現物のタッチ・iD・差し込みは対象外。"
+    },
+    {
+      "method": "smbc_nl",
+      "store": "jonathan",
+      "rate": 7.0,
+      "label": "対象店でスマホタッチ7%",
+      "note": "商業施設内の店舗など一部対象外あり。カード現物のタッチ・iD・差し込みは対象外。"
+    },
+    {
+      "method": "smbc_nl",
+      "store": "matsuya",
+      "rate": 0.5,
+      "label": "一部店舗のみ",
+      "note": "松屋の券売機でクレジットカードが使えるのは一部店舗のみ（モバイルオーダーなら利用可）。"
+    },
+    {
+      "method": "rakuten_card",
+      "store": "matsuya",
+      "rate": 1,
+      "label": "一部店舗のみ",
+      "note": "松屋の券売機でクレジットカードが使えるのは一部店舗のみ（モバイルオーダーなら利用可）。"
+    },
+    {
+      "method": "jcb_w",
+      "store": "matsuya",
+      "rate": 1,
+      "label": "一部店舗のみ",
+      "note": "松屋の券売機でクレジットカードが使えるのは一部店舗のみ（モバイルオーダーなら利用可）。"
+    },
+    {
+      "method": "seven_plus",
+      "store": "matsuya",
+      "rate": 0.5,
+      "label": "一部店舗のみ",
+      "note": "松屋の券売機でクレジットカードが使えるのは一部店舗のみ（モバイルオーダーなら利用可）。"
+    },
+    {
+      "method": "dcard",
+      "store": "matsuya",
+      "rate": 1,
+      "label": "一部店舗のみ",
+      "note": "松屋の券売機でクレジットカードが使えるのは一部店舗のみ（モバイルオーダーなら利用可）。"
+    },
+    {
+      "method": "paypay_card",
+      "store": "matsuya",
+      "rate": 1,
+      "label": "一部店舗のみ",
+      "note": "松屋の券売機でクレジットカードが使えるのは一部店舗のみ（モバイルオーダーなら利用可）。"
+    },
+    {
+      "method": "aeon_card",
+      "store": "matsuya",
+      "rate": 0.5,
+      "label": "一部店舗のみ",
+      "note": "松屋の券売機でクレジットカードが使えるのは一部店舗のみ（モバイルオーダーなら利用可）。"
+    },
+    {
+      "method": "kohnan_card",
+      "store": "matsuya",
+      "rate": 1.0,
+      "label": "一部店舗のみ",
+      "note": "松屋の券売機でクレジットカードが使えるのは一部店舗のみ（モバイルオーダーなら利用可）。"
     }
   ],
   "not_available": {
@@ -1040,6 +1150,12 @@
       "aeon_pay"
     ],
     "seijo": [
+      "aeon_pay"
+    ],
+    "matsuya": [
+      "aeon_pay"
+    ],
+    "jonathan": [
       "aeon_pay"
     ]
   }
