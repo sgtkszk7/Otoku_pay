@@ -886,7 +886,17 @@ $("#tab-list").addEventListener("click", e=>{
   }
   if (ds.toggle){
     openIds.has(ds.toggle) ? openIds.delete(ds.toggle) : openIds.add(ds.toggle);
-    keepPlace(el, renderList);
+    // 押した行だけを差し替える（ほかの行を描き直さないので、画面がずれない）
+    const [ctx, id] = ds.toggle.split(":");
+    const row = el.closest(".srow"), st = STORES.find(x=>x.id===id);
+    if (row && st){
+      const top = row.getBoundingClientRect().top;
+      const tmp = document.createElement("div"); tmp.innerHTML = rowHtml(st, ctx);
+      const nr = tmp.firstElementChild; row.replaceWith(nr);
+      const d = nr.getBoundingClientRect().top - top;
+      if (Math.abs(d) > 1) window.scrollBy(0, d);
+      const f = nr.querySelector(".srow-main"); if (f) f.focus({preventScroll:true});
+    } else keepPlace(el, renderList);
   }
   if (ds.jump){
     const sec = document.getElementById(ds.jump);
