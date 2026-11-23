@@ -50,13 +50,13 @@
   .store-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px}
   .store-head h2{margin:0}
   .cat{font-size:12px;color:var(--muted)}
-  .rank{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:start;padding:12px 0;border-top:1px solid var(--line)}
+  .rank{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:10px;align-items:start;padding:12px 0;border-top:1px solid var(--line)}
   .rank:first-of-type{border-top:0}
   .num{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:700;background:var(--bg);color:var(--muted)}
   .rank.top .num{background:var(--gold);color:#fff}
   .mname{font-weight:700}
   .mkind{font-size:12px;color:var(--muted)}
-  .rate{text-align:right}
+  .rate{text-align:right;white-space:nowrap}
   .rate b{font-size:20px;color:var(--accent)}
   .rank.top .rate b{color:var(--gold)}
   .pts{font-size:12px;color:var(--muted)}
@@ -114,7 +114,8 @@
   .note{font-size:12.5px;color:var(--muted);margin-top:6px}
   .note a{color:var(--accent)}
   details.note{margin-top:8px}
-  details.note > summary{display:inline-flex;align-items:center;gap:6px;list-style:none;cursor:pointer;font-size:12.5px;font-weight:700;color:var(--accent);background:var(--accent-soft);border:1px solid var(--accent);border-radius:999px;padding:5px 12px;min-height:32px}
+  .unit{font-size:.6em;margin-left:1px}
+  details.note > summary{white-space:nowrap;display:inline-flex;align-items:center;gap:6px;list-style:none;cursor:pointer;font-size:12.5px;font-weight:700;color:var(--accent);background:var(--accent-soft);border:1px solid var(--accent);border-radius:999px;padding:5px 12px;min-height:32px}
   details.note > summary::-webkit-details-marker{display:none}
   details.note > summary::after{content:"▼";font-size:10px}
   details.note[open] > summary::after{content:"▲"}
@@ -543,7 +544,7 @@ function rank(store, wallet=activeMethods(), date=dateJST()){
     const rule = store && RULES.find(r=>r.m===m.id && r.s===store.id);
     const special = rule?.scenario_rates?.[scenario?.id];
     if (rule){
-      if (special !== undefined){ rate = special; parts = [{t:scenario.label + " " + fmt(rate) + "%", cls:"boost"}]; }
+      if (special !== undefined){ rate = special; parts = [{t:(rule.benefit==="discount" ? rule.label : scenario.label) + " " + fmt(rate) + "%", cls:"boost"}]; }
       else if (rule.override){ parts = [{t:rule.label, cls:"warn"}]; rate = rule.rate; }
       else if (rule.rate > base){
         // 条件しだいで上がるもの（楽天市場のSPUなど）は「最低◯%〜すべて達成で最大◯%」
@@ -627,12 +628,12 @@ function esc(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;"
 function rateLabel(r){
   if (r.unsure) return "未確認";
   if (r.kind==="relative") return "商品表示率 " + (r.rate>=0?"+":"−") + fmt(Math.abs(r.rate)) + "%ポイント";
-  return fmt(r.rate) + (r.kind==="discount" ? "%引き" : "%");
+  return fmt(r.rate) + (r.kind==="discount" ? '%<small class="unit">引き</small>' : "%");
 }
 function amountLabel(r, amt){
   if (!amt || r.unsure || r.kind==="relative") return "";
   const n = Math.floor(amt*r.rate/100).toLocaleString();
-  return r.kind==="discount" ? "対象商品の本体価格で約"+n+"円引き" : "約"+n+"pt";
+  return r.kind==="discount" ? "約"+n+"円引き" : "約"+n+"pt";
 }
 function listHtml(ranking){
   const amt = Math.max(0, Number($("#amt").value)||0);

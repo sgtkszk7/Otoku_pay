@@ -73,7 +73,7 @@ test("store conditions and benefit units affect both rank and review",()=>{
   assert.equal(run('state.scenario.starbucks="mobile"; rows("starbucks")[0].rate'),7);
   assert.equal(run('rows("yahoo").find(r=>r.m.id==="paypay_card").rate'),2);
   assert.equal(run('state.scenario.yahoo="linked"; rows("yahoo").find(r=>r.m.id==="paypay_card").rate'),5);
-  assert.equal(run('state.scenario.okstore="member_food"; amountLabel(rows("okstore")[0],1000)'),"対象商品の本体価格で約29円引き");
+  assert.equal(run('state.scenario.okstore="member_food"; amountLabel(rows("okstore")[0],1000)'),"約29円引き");
 });
 test("every saved store renders and a full wallet can be simulated",()=>{
   const run=app();
