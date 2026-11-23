@@ -16,11 +16,17 @@ class MonthlyCheck(unittest.TestCase):
         self.data = json.loads(rates.DATA.read_text())
         self.task = "method-paypay"
         self.method = rates.subject(self.data, self.task)
+        for k in ("variants", "note", "charge", "only_stores", "cap"):
+            self.method.pop(k, None)  # 実データの注記に左右されないよう素の支払い方法で検証
         self.change = dict(kind="base", store_id=None, card_id=None, found=True, new_rate=0.8,
                            effective_date="2025-01-01", conditions="なし", evidence="公式の変更", source_url=self.method["src"])
 
     def judge(self, c=None, v=None):
         return rates.judge(self.data, self.task, c or self.change, v or self.change, "公式の変更")[0]
+
+    def test_note_requires_review(self):
+        self.method["note"] = "本人確認が必要"
+        self.assertEqual(self.judge(), "review")
 
     def test_valid_scoped_write(self):
         self.assertEqual(self.judge(), "apply")

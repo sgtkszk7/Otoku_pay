@@ -157,7 +157,7 @@
       "group": "クレジットカード",
       "base": 1,
       "point": "PayPayポイント",
-      "note": "2026年6月2日以降、PayPayアプリに登録していないカードはポイント付与対象外。",
+      "note": "2026年6月2日以降、PayPayアプリに登録していないカードはポイント付与対象外。 ポイント付与（PayPayステップ）には、PayPayの本人確認（eKYC）の完了が必要です。",
       "src": "https://paypay.ne.jp/guide/paypay-card/",
       "official_domains": [
         "paypay-card.co.jp",
@@ -236,7 +236,8 @@
       "official_domains": [
         "paypay.ne.jp"
       ],
-      "annual_fee_yen": 0
+      "annual_fee_yen": 0,
+      "note": "ポイント付与（PayPayステップ）には、PayPayの本人確認（eKYC）の完了が必要です。"
     },
     {
       "id": "paypay_credit",
@@ -245,7 +246,7 @@
       "group": "QR・スマホ決済",
       "base": 1,
       "point": "PayPayポイント",
-      "note": "PayPayステップ達成（前月30回以上かつ10万円以上）で最大1.5%。本人確認が必要。",
+      "note": "PayPayステップ達成（前月30回以上かつ10万円以上）で最大1.5%。本人確認が必要。 ポイント付与（PayPayステップ）には、PayPayの本人確認（eKYC）の完了が必要です。",
       "src": "https://paypay.ne.jp/event/paypaystep/",
       "official_domains": [
         "paypay.ne.jp",
@@ -338,7 +339,7 @@
         "dcard": 0,
         "rakuten_card": 0.5
       },
-      "charge_note": "三井住友カード（NL・ゴールドNL・Olive）・JCB・dカードは、モバイルSuica・Apple PayのSuicaへのチャージはポイント対象外（三井住友カードはGoogle Payからのチャージなら対象）。楽天カードは、楽天ペイアプリのSuica（Android）からチャージすると0.5%。そのほかのカードは付与率を確認できていません。",
+      "charge_note": "三井住友カード（NL・ゴールドNL・Olive）・JCB・dカードは、モバイルSuica・Apple PayのSuicaへのチャージはポイント対象外（三井住友カードはGoogle Payからのチャージなら対象）。楽天カードは、楽天ペイアプリからモバイルSuicaにチャージすると0.5%。そのほかのカードは付与率を確認できていません。",
       "note": "Suicaで払っても、JRE POINTが貯まるのは駅ビルなどのJRE POINT加盟店だけです。コンビニなどでは、チャージに使ったカードのポイントだけになります。PASMOなどほかの交通系ICも、ほぼ同じ考え方です。",
       "src": "https://www.jreast.co.jp/suica/shopping/",
       "official_domains": [
@@ -768,7 +769,8 @@
       ],
       "pc": [
         "rakuten",
-        "ponta"
+        "ponta",
+        "v"
       ],
       "official_domains": [
         "kfc.co.jp"
@@ -881,7 +883,10 @@
       "official_domains": [
         "matsukiyococokara.com",
         "matsukiyo.co.jp"
-      ]
+      ],
+      "pc_rates": {
+        "d": 1.0
+      }
     },
     {
       "id": "tsuruha",
@@ -942,7 +947,8 @@
       "official_domains": [
         "biccamera.com",
         "biccamera.co.jp"
-      ]
+      ],
+      "note": "dポイントカードも使えますが、ビックポイントとの二重取りはできません（10%還元の商品で、現金なら5%・他社カードなら4%のdポイント）。"
     },
     {
       "id": "amazon",
@@ -1160,11 +1166,15 @@
         "さんまるく"
       ],
       "pc": [
+        "d",
         "rakuten"
       ],
       "official_domains": [
         "saint-marc-hd.com"
-      ]
+      ],
+      "pc_rates": {
+        "d": 1.0
+      }
     },
     {
       "id": "tullys",
@@ -1215,7 +1225,7 @@
       "official_domains": [
         "seiyu.co.jp"
       ],
-      "note": "西友・リヴィンでは毎月「楽天ポイント増量日」があります（月曜・土曜が基本で、月によって対象日が追加されます）。対象日に1日合計2,500円（税抜）以上買い、西友アプリ内の楽天ポイントカードを提示すると4倍、さらに楽天カードか楽天ペイで払うと合計最大7倍（特典は1日250ポイントまで）。内容は月替わりのため、順位には含めていません。対象日は西友アプリで確認してください。"
+      "note": "楽天ポイントカード（店舗）は2027年4月4日で終了予定です（西友ネットスーパーは継続）。楽天ポイント増量日などのキャンペーンは2026年12月末で終了。2027年1月からトライアルの会員プログラムが始まる予定です。それまでは、増量日（月曜・土曜が基本）に1日合計2,500円（税抜）以上買い、西友アプリ内の楽天ポイントカードを提示すると4倍、楽天カードか楽天ペイで払うと最大7倍（特典は1日250ポイントまで）。"
     },
     {
       "id": "seijo",
@@ -1377,7 +1387,7 @@
       "store": "seven",
       "rate": 10,
       "label": "7iD登録で10%",
-      "note": "7iDにカードを登録すると、セブン‐イレブンのクレジット払いで10%（nanacoポイント9.5%＋セブンマイル0.5%）。引落口座をセブン銀行にすると+1%で最大11%。税金・公共料金など一部対象外。",
+      "note": "7iDにカードを登録すると、セブン‐イレブンのクレジット払いで10%（nanacoポイント9.5%＋セブンマイル0.5%）。引落口座をセブン銀行にすると+1%で最大11%。税金・公共料金など一部対象外。 たばこ、7NOW、Google Pay・QUICPayでの支払いは対象外（0.5%）。",
       "rate_max": 11,
       "max_label": "セブン銀行引落で"
     },
@@ -1408,7 +1418,7 @@
       "store": "aeon",
       "rate": 1,
       "label": "イオングループでいつでも2倍",
-      "note": "毎月10日（ありが10デー）はポイント5倍。20日・30日の感謝デーは「比較条件」で選べます。"
+      "note": "毎月10日（ありが10デー）のポイント5倍は、本州・四国（東北を除く）のイオン・イオンスタイル直営売場限定。20日・30日の感謝デーは「比較条件」で選べます。"
     },
     {
       "method": "aeon_pay",
@@ -1731,7 +1741,7 @@
       "store": "seven",
       "rate": 8.0,
       "label": "対象店でスマホタッチ8%",
-      "note": "セブン-イレブンアプリ提示などの条件で最大10%。",
+      "note": "セブン-イレブンアプリ提示などの条件で最大10%。 セブン‐イレブンアプリのバーコードを提示してスマホのタッチ決済で払うと最大11%（Oliveのクレジットモード限定・Vポイントの利用設定が必要）。",
       "variants": {
         "card": 0.5
       }
@@ -2024,6 +2034,14 @@
       "label": "イオングループで2倍（WAON会員登録）",
       "note": "WAON会員登録（所有者情報登録）をしたWAONなら、イオングループの対象店舗で200円につき2ポイント。",
       "src": "https://www.waon.net/campaign/20190601_2baipointcp/"
+    },
+    {
+      "method": "waon",
+      "store": "mybasket",
+      "rate": 1.0,
+      "label": "WAON会員登録で2倍",
+      "note": "WAON会員登録（所有者情報登録）をしたWAONなら200円につき2ポイント。未登録は1ポイント。",
+      "src": "https://www.waon.net/campaign/20190601_2baipointcp/"
     }
   ],
   "not_available": {
@@ -2110,5 +2128,6 @@
     "jonathan": [
       "aeon_pay"
     ]
-  }
+  },
+  "last_auto_check": "2026-11-23"
 }
