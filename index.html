@@ -53,6 +53,8 @@
   .bd span.boost{background:var(--accent-soft);color:var(--accent)}
   .bd span.pc{background:var(--gold-soft);color:var(--gold)}
   .bd span.warn{background:var(--warn-soft);color:var(--warn)}
+  .bd span.own{background:#ede7f6;color:#5b3f99}
+  @media (prefers-color-scheme: dark){ .bd span.own{background:#2a2340;color:#c3b2ee} }
   .hint{font-size:12px;color:var(--muted);margin:6px 2px 0}
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:20px;z-index:10}
   .modal.hidden{display:none}
@@ -152,7 +154,7 @@
 
   <footer>
     <span id="checked"></span><br>還元率は公式サイト等を確認した目安です。対象店舗・条件・上限・キャンペーンは頻繁に変わるため、実際の還元は各社の公式情報でご確認ください。<br>
-    プロトタイプ版（主要チェーン23店・決済16種のサンプルデータ）
+    プロトタイプ版（主要チェーン31店・決済16種のサンプルデータ）
   </footer>
 </div>
 
@@ -219,11 +221,20 @@ function usableAt(m, store){
   if (store && NOT_AVAILABLE[store.id] && NOT_AVAILABLE[store.id].includes(m.id)) return false;
   return true;
 }
+/* お店独自のポイント（家電量販店など）：支払い方法の種類で付与率が変わる */
+function payKind(m){ return m.id==="cash" ? "cash" : (m.group==="QR・スマホ決済" ? "qr" : "card"); }
+function ownPoint(m, store){
+  const o = store && store.own_points; if (!o) return null;
+  const k = payKind(m), v = o[k];
+  if (typeof v !== "number") return null;
+  return {rate:v, name:o.name, relative:!!o.relative, cond:(o.cond||{})[k] || ""};
+}
 function methodRate(m, store){
   if (!usableAt(m, store)) return null;
   const base = baseOf(m);
   const rule = store && RULES.find(r=>r.m===m.id && r.s===store.id);
-  return rule && rule.rate > base ? rule.rate : base;
+  const op = ownPoint(m, store);
+  return (rule && rule.rate > base ? rule.rate : base) + (op ? op.rate : 0);
 }
 
 /* ============ 見直しの試算 ============ */
@@ -291,7 +302,8 @@ function rank(store){
   const methods = activeMethods();
   // 現金に特典があるお店（例：オーケーの現金割引）では、登録していなくても現金を比較に入れる
   const cash = METHODS.find(x=>x.id==="cash");
-  if (store && cash && !methods.includes(cash) && RULES.some(r=>r.m==="cash" && r.s===store.id)) methods.push(cash);
+  if (store && cash && !methods.includes(cash) &&
+      (RULES.some(r=>r.m==="cash" && r.s===store.id) || (store.own_points && typeof store.own_points.cash==="number"))) methods.push(cash);
   for (const m of methods){
     if (!usableAt(m, store)) continue;
     const base = baseOf(m);
@@ -301,6 +313,20 @@ function rank(store){
       if (rule.rate > base){ parts = [{t:`${rule.label} ${fmt(rule.rate)}%`, cls:"boost"}]; rate = rule.rate; }
       else parts.push({t:rule.label, cls:"boost"});
       if (rule.note) notes.push(rule.note);
+    }
+    const op = ownPoint(m, store);
+    let unsure = false;
+    if (store && store.own_points && !op){
+      unsure = true;  // お店のポイントがこの支払い方法でいくら付くか未確認
+      parts.push({t:`${store.own_points.name}は未確認`, cls:"warn"});
+    }
+    if (op){
+      rate += op.rate;
+      const label = op.relative
+        ? (op.rate===0 ? `${op.name} 表示率どおり` : `${op.name} ${op.rate>0?"+":"−"}${fmt(Math.abs(op.rate))}%（現金比）`)
+        : `${op.name} +${fmt(op.rate)}%`;
+      parts.push({t:label, cls:"own"});
+      if (op.cond) notes.push(`${op.name}：${op.cond}`);
     }
     if (m.note) notes.push(m.note);
     // ポイントカード提示（ネット通販以外）
@@ -313,9 +339,10 @@ function rank(store){
       const names = store.pc.filter(p=>state.pcs.includes(p)).map(p=>POINT_CARDS.find(x=>x.id===p).name.replace("カード",""));
       parts.push({t:`${names[0]}提示 +${fmt(pcAdd)}%`, cls:"pc"});
     }
-    list.push({m, rate: rate + pcAdd, parts, notes});
+    list.push({m, rate: rate + pcAdd, parts, notes, unsure});
   }
-  list.sort((a,b)=>b.rate-a.rate || a.m.name.localeCompare(b.m.name,"ja"));
+  // 条件が確認できているものを先に、その中で還元率の高い順
+  list.sort((a,b)=>(a.unsure - b.unsure) || b.rate-a.rate || a.m.name.localeCompare(b.m.name,"ja"));
   return list;
 }
 
@@ -348,7 +375,8 @@ const NOT_REGISTERED = `<div class="banner info">支払い方法がまだ登録�
 function renderRanking(store, rawQuery){
   if (!store) return renderUnknown(rawQuery);
   let html = state.methods.length ? "" : NOT_REGISTERED;
-  html += `<div class="card"><div class="store-head"><h2>${esc(store.name)}</h2><span class="cat">${esc(store.cat)}</span></div>${listHtml(rank(store))}</div>`;
+  const ownNote = store.own_points && store.own_points.note ? `<p class="note" style="margin-top:0">${esc(store.own_points.note)}</p>` : "";
+  html += `<div class="card"><div class="store-head"><h2>${esc(store.name)}</h2><span class="cat">${esc(store.cat)}</span></div>${ownNote}${listHtml(rank(store))}</div>`;
   $("#result").innerHTML = html;
 }
 

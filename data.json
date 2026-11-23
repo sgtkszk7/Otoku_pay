@@ -433,9 +433,22 @@
       "cat": "家電",
       "alias": [
         "ビック",
-        "びっくかめら"
+        "びっくかめら",
+        "ビックカメラ",
+        "Bic"
       ],
-      "pc": []
+      "pc": [],
+      "own_points": {
+        "name": "ビックポイント",
+        "cash": 10,
+        "card": 10,
+        "qr": 10,
+        "cond": {
+          "card": "ビックカメラ公式アプリの提示が条件（提示しないと8%）",
+          "qr": "ビックカメラ公式アプリの提示が条件（提示しないと8%）"
+        },
+        "note": "ビックポイントは多くの家電で10%の場合の目安です（Apple製品などは低め）。"
+      }
     },
     {
       "id": "amazon",
@@ -518,6 +531,127 @@
         "UNIQLO",
         "ゆにくろ",
         "ユニクロ"
+      ],
+      "pc": []
+    },
+    {
+      "id": "yodobashi",
+      "name": "ヨドバシカメラ",
+      "cat": "家電",
+      "alias": [
+        "ヨドバシ",
+        "よどばし",
+        "Yodobashi"
+      ],
+      "pc": [],
+      "own_points": {
+        "name": "ゴールドポイント",
+        "cash": 10,
+        "card": 10,
+        "cond": {
+          "card": "ヨドバシゴールドポイントカードアプリの提示が条件（提示しないと8%）"
+        },
+        "note": "ゴールドポイントは多くの商品で10%の場合の目安です（Apple製品などは低め）。QRコード決済は使えません。"
+      }
+    },
+    {
+      "id": "yamada",
+      "name": "ヤマダ電機",
+      "cat": "家電",
+      "alias": [
+        "ヤマダデンキ",
+        "ヤマダ",
+        "やまだ",
+        "LABI",
+        "テックランド"
+      ],
+      "pc": [],
+      "own_points": {
+        "name": "ヤマダポイント",
+        "cash": 10,
+        "card": 8,
+        "qr": 8,
+        "note": "ヤマダポイントは現金10%・クレカやQR決済8%が目安です（商品やセールにより異なる）。"
+      }
+    },
+    {
+      "id": "joshin",
+      "name": "ジョーシン",
+      "cat": "家電",
+      "alias": [
+        "Joshin",
+        "上新電機",
+        "じょーしん"
+      ],
+      "pc": [],
+      "own_points": {
+        "name": "ジョーシンポイント",
+        "relative": true,
+        "cash": 0,
+        "card": -2,
+        "note": "ジョーシンポイントは商品ごとの表示率が基準（現金払いの場合）。他社クレジットカードは表示率から2%少なくなるので、現金との差で比べています。QR決済の付与率は未確認です。"
+      }
+    },
+    {
+      "id": "saintmarc",
+      "name": "サンマルクカフェ",
+      "cat": "カフェ",
+      "alias": [
+        "サンマルク",
+        "さんまるく"
+      ],
+      "pc": [
+        "rakuten"
+      ]
+    },
+    {
+      "id": "tullys",
+      "name": "タリーズコーヒー",
+      "cat": "カフェ",
+      "alias": [
+        "タリーズ",
+        "たりーず",
+        "TULLY'S",
+        "Tullys"
+      ],
+      "pc": [
+        "rakuten"
+      ]
+    },
+    {
+      "id": "mybasket",
+      "name": "まいばすけっと",
+      "cat": "スーパー",
+      "alias": [
+        "マイバスケット",
+        "まいばす",
+        "マイバス"
+      ],
+      "pc": []
+    },
+    {
+      "id": "seiyu",
+      "name": "西友",
+      "cat": "スーパー",
+      "alias": [
+        "SEIYU",
+        "せいゆう",
+        "セイユー",
+        "リヴィン",
+        "LIVIN",
+        "サニー"
+      ],
+      "pc": [
+        "rakuten"
+      ]
+    },
+    {
+      "id": "seijo",
+      "name": "成城石井",
+      "cat": "スーパー",
+      "alias": [
+        "せいじょういしい",
+        "成城"
       ],
       "pc": []
     }
@@ -759,6 +893,69 @@
       "rate": 0.5,
       "label": "店舗による",
       "note": "無印良品のQRコード決済は店舗によって対応が異なります（2026年3月以降、対応店舗が拡大中）。"
+    },
+    {
+      "method": "paypay",
+      "store": "joshin",
+      "rate": 0.5,
+      "label": "店舗で使えるか要確認",
+      "note": "ジョーシンの店舗でこの決済が使えるかは確認できていません。"
+    },
+    {
+      "method": "paypay_credit",
+      "store": "joshin",
+      "rate": 1,
+      "label": "店舗で使えるか要確認",
+      "note": "ジョーシンの店舗でこの決済が使えるかは確認できていません。"
+    },
+    {
+      "method": "aupay",
+      "store": "joshin",
+      "rate": 0.5,
+      "label": "店舗で使えるか要確認",
+      "note": "ジョーシンの店舗でこの決済が使えるかは確認できていません。"
+    },
+    {
+      "method": "smbc_nl",
+      "store": "seiyu",
+      "rate": 0.5,
+      "label": "タッチ決済は不可",
+      "note": "西友はクレジットカードのタッチ決済に対応していないため、7%の対象店ではありません（カードの差し込み払いは0.5%）。"
+    },
+    {
+      "method": "paypay",
+      "store": "saintmarc",
+      "rate": 0.5,
+      "label": "一部店舗は不可",
+      "note": "サンマルクカフェの一部店舗ではQRコード決済が使えません。"
+    },
+    {
+      "method": "paypay_credit",
+      "store": "saintmarc",
+      "rate": 1,
+      "label": "一部店舗は不可",
+      "note": "サンマルクカフェの一部店舗ではQRコード決済が使えません。"
+    },
+    {
+      "method": "rakuten_pay",
+      "store": "saintmarc",
+      "rate": 1.5,
+      "label": "一部店舗は不可",
+      "note": "サンマルクカフェの一部店舗ではQRコード決済が使えません。"
+    },
+    {
+      "method": "dbarai",
+      "store": "saintmarc",
+      "rate": 0.5,
+      "label": "一部店舗は不可",
+      "note": "サンマルクカフェの一部店舗ではQRコード決済が使えません。"
+    },
+    {
+      "method": "aupay",
+      "store": "saintmarc",
+      "rate": 0.5,
+      "label": "一部店舗は不可",
+      "note": "サンマルクカフェの一部店舗ではQRコード決済が使えません。"
     }
   ],
   "not_available": {
@@ -801,6 +998,42 @@
       "aeon_pay"
     ],
     "uniqlo": [
+      "aeon_pay"
+    ],
+    "bic": [
+      "aeon_pay"
+    ],
+    "yodobashi": [
+      "paypay",
+      "paypay_credit",
+      "rakuten_pay",
+      "dbarai",
+      "aupay",
+      "aeon_pay"
+    ],
+    "yamada": [
+      "aeon_pay"
+    ],
+    "joshin": [
+      "aeon_pay"
+    ],
+    "saintmarc": [
+      "aeon_pay"
+    ],
+    "tullys": [
+      "aeon_pay"
+    ],
+    "mybasket": [
+      "paypay",
+      "paypay_credit",
+      "rakuten_pay",
+      "dbarai",
+      "aupay"
+    ],
+    "seiyu": [
+      "aeon_pay"
+    ],
+    "seijo": [
       "aeon_pay"
     ]
   }
