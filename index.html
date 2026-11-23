@@ -54,6 +54,11 @@
   .bd span.pc{background:var(--gold-soft);color:var(--gold)}
   .bd span.warn{background:var(--warn-soft);color:var(--warn)}
   .bd span.own{background:#ede7f6;color:#5b3f99}
+  .seg{display:flex;align-items:center;gap:6px;margin:4px 0 8px;font-size:13px;color:var(--muted);flex-wrap:wrap}
+  .seg span{margin-right:4px}
+  .seg button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:5px 14px;font:inherit;font-size:13px;cursor:pointer}
+  .seg button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  @media (prefers-color-scheme: dark){ .seg button.on{color:#0b1416} }
   @media (prefers-color-scheme: dark){ .bd span.own{background:#2a2340;color:#c3b2ee} }
   .hint{font-size:12px;color:var(--muted);margin:6px 2px 0}
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:20px;z-index:10}
@@ -180,10 +185,11 @@ function loadData(d){
 
 /* ============ 保存 ============ */
 const KEY = "otoku-pay-v1";
-let state = {methods:[], overrides:{}, pcs:[], favs:[], spend:{}};
+let state = {methods:[], overrides:{}, pcs:[], favs:[], spend:{}, app:{}};
 const DEFAULT_SPEND = 3000;
 try { const s = JSON.parse(localStorage.getItem(KEY)); if (s) state = Object.assign(state, s); } catch(e){}
 if (!state.spend) state.spend = {};
+if (!state.app) state.app = {};
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){} }
 
 /* ============ 検索 ============ */
@@ -222,12 +228,19 @@ function usableAt(m, store){
   return true;
 }
 /* お店独自のポイント（家電量販店など）：支払い方法の種類で付与率が変わる */
+function appShown(store){ return state.app[store.id] !== false; }  // 初期値は「提示する」
 function payKind(m){ return m.id==="cash" ? "cash" : (m.group==="QR・スマホ決済" ? "qr" : "card"); }
 function ownPoint(m, store){
   const o = store && store.own_points; if (!o) return null;
-  const k = payKind(m), v = o[k];
+  const k = payKind(m);
+  let v = o[k], cond = (o.cond||{})[k] || "";
+  // お店のアプリ（ポイントカード）を提示しない設定なら、提示なしの付与率を使う
+  if (o.app && typeof (o.app.without||{})[k] === "number"){
+    if (appShown(store)) cond = `${o.app.label}の提示が条件（提示しないと${o.app.without[k]}%）`;
+    else { v = o.app.without[k]; cond = `${o.app.label}を提示すると${o[k]}%に上がります`; }
+  }
   if (typeof v !== "number") return null;
-  return {rate:v, name:o.name, relative:!!o.relative, cond:(o.cond||{})[k] || ""};
+  return {rate:v, name:o.name, relative:!!o.relative, cond};
 }
 function methodRate(m, store){
   if (!usableAt(m, store)) return null;
@@ -375,8 +388,12 @@ const NOT_REGISTERED = `<div class="banner info">支払い方法がまだ登録�
 function renderRanking(store, rawQuery){
   if (!store) return renderUnknown(rawQuery);
   let html = state.methods.length ? "" : NOT_REGISTERED;
-  const ownNote = store.own_points && store.own_points.note ? `<p class="note" style="margin-top:0">${esc(store.own_points.note)}</p>` : "";
-  html += `<div class="card"><div class="store-head"><h2>${esc(store.name)}</h2><span class="cat">${esc(store.cat)}</span></div>${ownNote}${listHtml(rank(store))}</div>`;
+  const op = store.own_points;
+  const ownNote = op && op.note ? `<p class="note" style="margin-top:0">${esc(op.note)}</p>` : "";
+  const appSel = op && op.app ? `<div class="seg"><span>${esc(op.app.label)}の提示</span>
+      <button data-app="${store.id}" data-v="1" class="${appShown(store)?"on":""}">する</button>
+      <button data-app="${store.id}" data-v="0" class="${appShown(store)?"":"on"}">しない</button></div>` : "";
+  html += `<div class="card"><div class="store-head"><h2>${esc(store.name)}</h2><span class="cat">${esc(store.cat)}</span></div>${ownNote}${appSel}${listHtml(rank(store))}</div>`;
   $("#result").innerHTML = html;
 }
 
@@ -539,7 +556,11 @@ function showTab(t){
 }
 $("#q").addEventListener("input", doSearch);
 $("#amt").addEventListener("input", doSearch);
-$("#result").addEventListener("click", e=>{ const q = e.target.dataset && e.target.dataset.ai; if (q) lookupAI(q); });
+$("#result").addEventListener("click", e=>{
+  const ds = e.target.dataset || {};
+  if (ds.ai) lookupAI(ds.ai);
+  if (ds.app){ state.app[ds.app] = ds.v==="1"; save(); doSearch(); }
+});
 $("#quick").addEventListener("click", e=>{ const q=e.target.dataset.q; if(q){ $("#q").value=q; doSearch(); }});
 $("#methodlist").addEventListener("change", e=>{
   const id = e.target.dataset.m;
