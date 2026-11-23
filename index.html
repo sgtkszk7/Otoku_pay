@@ -3,28 +3,40 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>おトク支払いナビ（プロトタイプ）</title>
+<title>どれ払い？</title>
+<meta name="description" content="いちばん得する払い方がすぐわかる。お店ごとに、あなたの支払い方法をポイント還元率の高い順に並べます。">
+<meta name="theme-color" content="#13284A">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="どれ払い？">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#f6f4ef; --card:#ffffff; --ink:#1f2a2e; --muted:#6b7478; --line:#e4e0d6;
-    --accent:#0f766e; --accent-soft:#e3f2ef; --gold:#b7791f; --gold-soft:#fbf1dc;
+    --bg:#f6f4ef; --card:#ffffff; --ink:#1b2333; --muted:#5f6773; --line:#e4e0d6;
+    --accent:#1e3a6b; --accent-soft:#e7edf6; --gold:#8c6200; --gold-soft:#fbf1dc;
     --warn:#9a3412; --warn-soft:#fdeee6; --radius:18px;
   }
   @media (prefers-color-scheme: dark){
-    :root{ --bg:#14191b; --card:#1d2427; --ink:#e8ecec; --muted:#9aa5a8; --line:#2d3639;
-      --accent:#4fd1c0; --accent-soft:#16302d; --gold:#f2c46b; --gold-soft:#332a17; --warn:#f6a77f; --warn-soft:#3a2219; }
+    :root{ --bg:#10151f; --card:#18202d; --ink:#e8ecf2; --muted:#9aa6b8; --line:#273244;
+      --accent:#9db8e8; --accent-soft:#1d2a40; --gold:#e8c25a; --gold-soft:#2e2614; --warn:#f6a77f; --warn-soft:#3a2219; }
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Hiragino Maru Gothic Pro",system-ui,sans-serif;font-size:15px;line-height:1.6}
   .wrap{max-width:640px;margin:0 auto;padding:16px 16px 96px}
+  .brand{display:flex;align-items:center;gap:10px}
+  .brand img{border-radius:10px;flex:none}
   header h1{font-size:20px;margin:4px 0 2px;letter-spacing:.02em}
   header p{margin:0;color:var(--muted);font-size:13px}
   nav.tabs{display:flex;gap:6px;margin:16px 0;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px}
   nav.tabs button{flex:1;border:0;background:transparent;color:var(--muted);padding:9px 6px;border-radius:999px;font:inherit;font-size:14px;font-weight:500;cursor:pointer}
   nav.tabs button.on{background:var(--accent);color:#fff}
-  @media (prefers-color-scheme: dark){ nav.tabs button.on{color:#0b1416} }
+  @media (prefers-color-scheme: dark){ nav.tabs button.on{color:#0e1626} }
   .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:12px}
   .row{display:flex;gap:8px;align-items:center}
   input[type=text],input[type=number]{width:100%;font:inherit;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink)}
@@ -58,7 +70,8 @@
   .seg span{margin-right:4px}
   .seg button{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:5px 14px;font:inherit;font-size:13px;cursor:pointer}
   .seg button.on{background:var(--accent);border-color:var(--accent);color:#fff}
-  @media (prefers-color-scheme: dark){ .seg button.on{color:#0b1416} }
+  @media (prefers-color-scheme: dark){ .seg button.on{color:#0e1626} }
+  @media (prefers-color-scheme: dark){ .rank.top .num{color:#10151f} }
   @media (prefers-color-scheme: dark){ .bd span.own{background:#2a2340;color:#c3b2ee} }
   .hint{font-size:12px;color:var(--muted);margin:6px 2px 0}
   .store-pick{width:100%;font:inherit;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);appearance:auto}
@@ -81,7 +94,7 @@
   .method .ov{width:84px;padding:6px 8px;font-size:14px;text-align:right}
   .group-title{font-size:12px;font-weight:700;color:var(--muted);margin:14px 0 4px;letter-spacing:.05em}
   .btn{border:0;background:var(--accent);color:#fff;font:inherit;font-weight:500;padding:10px 16px;border-radius:10px;cursor:pointer}
-  @media (prefers-color-scheme: dark){ .btn{color:#0b1416} }
+  @media (prefers-color-scheme: dark){ .btn{color:#0e1626} }
   .btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
   .fav-store{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:1px solid var(--line);gap:10px}
   .fav-store:first-child{border-top:0}
@@ -105,8 +118,8 @@
 <body>
 <div class="wrap">
   <header>
-    <h1>おトク支払いナビ</h1>
-    <p>お店の名前を入れると、あなたの支払い方法の中で一番ポイントが貯まるものを教えます。</p>
+    <div class="brand"><img src="assets/favicon.svg" alt="" width="40" height="40"><h1>どれ払い？</h1></div>
+    <p>いちばん得する払い方がすぐわかる。お店を選ぶと、あなたの支払い方法をポイント還元率の高い順に並べます。</p>
   </header>
 
   <nav class="tabs" role="tablist">
