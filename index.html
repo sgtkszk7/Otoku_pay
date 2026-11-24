@@ -264,7 +264,7 @@ function loadData(d){
 }
 
 // 画面（index.html）を更新したら、この番号を変える。開いている画面より新しい版が公開されていたら「更新する」を出す
-const APP_VERSION = "2026-11-23.2";
+const APP_VERSION = "2026-11-25.1";
 const KEY = "otoku-pay-v1", DEFAULT_SPEND = 3000;
 const blankState = () => ({methods:[], overrides:{}, pcs:[], favs:[], spend:{}, app:{}, charge:{}, usual:{}, pointPrio:[], scenario:{}, ai:{}});
 let state = blankState();
@@ -556,7 +556,7 @@ function renderSuggest(){
       const fav = m.only_stores.some(id=>state.favs.includes(id));
       html += '<div class="sug"><div class="sug-head"><b>'+esc(m.name)+'</b><span class="mkind">'+esc(names)+'専用</span></div>'+
         '<div class="note">'+(fav
-          ? esc(names)+'では、ほかの支払い方法の方がおトクになっています。チャージ方法（「支払い方法」タブ）を見直すと順位が変わることがあります。'+(m.star_yen ? 'なお、Star（'+m.star_yen+'円で1個）はこの計算に入れていないので、Starを貯めているなら使い続ける価値はあります。' : '')
+          ? esc(names)+'では、ほかの支払い方法の方がおトクになっています。チャージ方法（「支払い方法」タブ）を見直すと順位が変わることがあります。'+(m.star_yen && m.star_value ? 'Starは'+esc(m.star_value.label)+'に交換した場合で計算しています。' : m.star_yen ? 'なお、Star（'+m.star_yen+'円で1個）はこの計算に入れていないので、Starを貯めているなら使い続ける価値はあります。' : '')
           : esc(names)+'専用の支払い方法です。'+esc(names)+'を「よく行くお店」に追加すると、試算に入ります。')+'</div></div>';
       continue;
     }
@@ -622,11 +622,11 @@ function rank(store, wallet=activeMethods(), date=dateJST(), typical=false){
       parts.push({t:label, cls:"own"});
       if (op.cond) notes.push(`${op.name}：${op.cond}`);
     }
+    // スタバのStarなど：交換先の金額で％に換算（換算先がなければ個数の目安だけ）
+    const sv = m.star_yen && m.star_value;
+    const starRate = sv ? sv.yen / (sv.stars * m.star_yen) * 100 : 0;
     if (m.star_yen){
-      // Starは%に換算せず、貯まる数の目安だけを出す
-      const amt = Math.max(0, Number($("#amt").value)||0);
-      const stars = Math.floor(amt / m.star_yen);
-      parts.push({t: amt ? `Star 約${stars}個（${m.star_yen}円で1個）` : `Starが貯まる（${m.star_yen}円で1個）`, cls:"own"});
+      parts.push({t: sv ? `Star ${fmt(starRate)}%相当（${sv.label}で換算）` : `Starが貯まる（${m.star_yen}円で1個）`, cls:"own"});
     }
     if (m.charge){
       if (m.charge_note) notes.push(m.charge_note);
@@ -655,9 +655,9 @@ function rank(store, wallet=activeMethods(), date=dateJST(), typical=false){
     // お店の割引日（イオンの感謝デーなど）：対象の払い方なら、ポイントとは別にレジで値引き
     const disc = scenario?.discount?.methods?.includes(m.id) ? scenario.discount.rate : 0;
     if (disc){ parts.push({t:`${scenario.discount.label} ${fmt(disc)}%引き`, cls:"boost"}); if (scenario.discount.how) how.push(scenario.discount.how); }
-    const extra = (op?.rate ?? 0) + (ch?.rate ?? 0) + pcAdd + disc;
+    const extra = (op?.rate ?? 0) + (ch?.rate ?? 0) + pcAdd + disc + starRate;
     const cap = !rule?.override && m.cap && payRate > (m.cap.after_by_store?.[store?.id] ?? m.cap.after_rate) ? m.cap : null;
-    list.push({m, rate:payRate+extra, payRate, extra, disc, parts, notes, unsure, how, upto, kind, defaultPayRate, variantRates,
+    list.push({m, rate:payRate+extra, payRate, extra, disc, starRate, parts, notes, unsure, how, upto, kind, defaultPayRate, variantRates,
       cap, afterRate:cap ? (cap.after_by_store?.[store?.id] ?? cap.after_rate)+extra : payRate+extra,
       src:(ch?.card && m.charge_rates?.[ch.card.id]?.src) || rule?.src || m.src, charger:ch?.card});
 
@@ -681,6 +681,11 @@ function amountLabel(r, amt){
   const n = Math.floor(amt*r.rate/100).toLocaleString();
   if (r.kind==="discount") return "約"+n+"円引き";
   if (r.disc) return "約"+Math.floor(amt*r.disc/100).toLocaleString()+"円引き＋約"+Math.floor(amt*(r.rate-r.disc)/100).toLocaleString()+"pt";
+  if (r.starRate){
+    // Starは円に直さず個数で出す（ポイント分があれば併記）
+    const pt = Math.floor(amt*(r.rate-r.starRate)/100), stars = Math.floor(amt/r.m.star_yen);
+    return (pt ? "約"+pt.toLocaleString()+"pt＋" : "")+"Star "+stars+"個";
+  }
   return "約"+n+"pt";
 }
 function listHtml(ranking){

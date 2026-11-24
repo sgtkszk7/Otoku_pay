@@ -533,14 +533,19 @@
           "src": "https://j-pointpartner.jcb.co.jp/shop/000014"
         }
       },
-      "note": "公式アプリに登録したスタバカードで払うと、税込60円で1 Starが貯まります（Starは還元率には含めていません）。Starには有効期限があります。",
+      "note": "公式アプリに登録したスタバカードで払うと、税込60円で1 Starが貯まります（店頭・モバイルオーダーとも）。Starの価値は交換先で変わります：25 Star＝カスタマイズ54円分で約3.6%、90 Star＝300円券で約5.6%、130 Star＝500円券で約6.4%、190 Star＝800円券で約7.0%。この比較では、ドリンク1杯に使いやすい500円券で換算しています。eTicketは「その金額までの1品」に使う券なので、安い商品に使うと差額は戻りません。Starは付与から1年後の翌月1日まで有効です。",
       "src": "https://www.starbucks.co.jp/rewards/",
       "official_domains": [
         "starbucks.co.jp"
       ],
       "annual_fee_yen": 0,
       "star_yen": 60,
-      "charge_note": "JCB CARD Wの対象は、事前登録したオンライン入金・オートチャージです。2027年1月12日までの特典を1ポイント＝1円で換算し、確認期間の外はチャージ還元を試算に含めません。"
+      "charge_note": "JCB CARD Wの対象は、事前登録したオンライン入金・オートチャージです。2027年1月12日までの特典を1ポイント＝1円で換算し、確認期間の外はチャージ還元を試算に含めません。",
+      "star_value": {
+        "stars": 130,
+        "yen": 500,
+        "label": "500円券"
+      }
     },
     {
       "id": "kohnan_pay",
@@ -817,11 +822,22 @@
         },
         {
           "id": "mobile",
-          "label": "モバイルオーダー（Apple Pay対象カードを比較）",
+          "label": "モバイルオーダー",
           "methods": [
+            "sbux_card",
             "smbc_nl",
             "smbc_gold_nl",
-            "olive"
+            "olive",
+            "rakuten_card",
+            "jcb_w",
+            "dcard",
+            "paypay_card",
+            "aeon_card",
+            "seven_plus",
+            "nanaco_credit",
+            "kohnan_card",
+            "paypay",
+            "paypay_credit"
           ]
         }
       ]
@@ -1951,7 +1967,7 @@
       "store": "starbucks",
       "rate": 0.5,
       "label": "店頭払い",
-      "note": "スターバックスは、アプリ経由のApple Payでのモバイルオーダーのみ対象（店頭払いとスタバカードへのチャージは対象外）。",
+      "note": "スターバックスは、アプリのモバイルオーダーでApple Pay払いにしたときだけ対象です（店頭払いとスタバカードへのチャージは対象外）。Apple Payで払うとスタバのStarは付きません。",
       "scenario_rates": {
         "mobile": 7
       },
@@ -1962,7 +1978,7 @@
       "store": "starbucks",
       "rate": 0.5,
       "label": "店頭払い",
-      "note": "スターバックスは、アプリ経由のApple Payでのモバイルオーダーのみ対象（店頭払いとスタバカードへのチャージは対象外）。",
+      "note": "スターバックスは、アプリのモバイルオーダーでApple Pay払いにしたときだけ対象です（店頭払いとスタバカードへのチャージは対象外）。Apple Payで払うとスタバのStarは付きません。",
       "scenario_rates": {
         "mobile": 7
       },
@@ -1973,7 +1989,7 @@
       "store": "starbucks",
       "rate": 0.5,
       "label": "店頭払い",
-      "note": "スターバックスは、アプリ経由のApple Payでのモバイルオーダーのみ対象（店頭払いとスタバカードへのチャージは対象外）。",
+      "note": "スターバックスは、アプリのモバイルオーダーでApple Pay払いにしたときだけ対象です（店頭払いとスタバカードへのチャージは対象外）。Apple Payで払うとスタバのStarは付きません。",
       "scenario_rates": {
         "mobile": 8
       },

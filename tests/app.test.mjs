@@ -31,9 +31,11 @@ test("store and review follow the displayed default and explicit point priority"
   assert.equal(run('state.pointPrio=["PayPayポイント"]; rows("starbucks")[0].m.id'),"paypay_card");
   assert.equal(run('suggest().unused.some(m=>m.id==="paypay_card")'),false);
 });
+const STAR=500/(130*60)*100;  // スタバのStarを500円券で換算した％
 test("charge reward requires a known pair and candidate wallet recalculates existing cards",()=>{
   const run=app({methods:["sbux_card","saison_pearl"],favs:["starbucks"],spend:{starbucks:10000}});
-  assert.equal(run('rows("starbucks").find(r=>r.m.charge).rate'),0);
+  assert.equal(run('rows("starbucks").find(r=>r.m.charge).rate'),STAR);
+  assert.equal(run('amountLabel(rows("starbucks").find(r=>r.m.charge),1000)'),"Star 16個");
   assert.equal(run('state.methods=["sbux_card"]; METHODS.find(m=>m.id==="sbux_card").charge_rates={jcb_w:5.5}; suggest().out.find(o=>o.m.id==="jcb_w").yearly'),6600);
   assert.equal(run('state.charge.sbux_card="cash"; suggest().out.some(o=>o.yearly===6600)'),false);
 });
@@ -71,6 +73,7 @@ test("store conditions and benefit units affect both rank and review",()=>{
   assert.equal(run('bestPointCard(shop("lawson")).rate'),0.5);
   assert.equal(run('state.scenario.lawson="evening"; bestPointCard(shop("lawson")).rate'),1);
   assert.equal(run('state.scenario.starbucks="mobile"; rows("starbucks")[0].rate'),7);
+  assert.equal(run('state.methods.push("sbux_card","rakuten_card"); rows("starbucks").map(r=>r.m.id).join()'),"smbc_nl,sbux_card,rakuten_card,paypay_card");
   assert.equal(run('rows("yahoo").find(r=>r.m.id==="paypay_card").rate'),2);
   assert.equal(run('state.scenario.yahoo="linked"; rows("yahoo").find(r=>r.m.id==="paypay_card").rate'),5);
   assert.equal(run('state.scenario.okstore="member_food"; amountLabel(rows("okstore")[0],1000)'),"約29円引き");
@@ -81,9 +84,10 @@ test("every saved store renders and a full wallet can be simulated",()=>{
 });
 test("dated online charge is used only until the documented end date",()=>{
   const run=app({methods:["jcb_w","sbux_card"],favs:["starbucks"],spend:{starbucks:10000}});
-  assert.equal(run('rank(shop("starbucks"),activeMethods(),"2027-01-12")[0].rate'),10.5);
-  assert.equal(run('rank(shop("starbucks"),activeMethods(),"2027-01-13").find(r=>r.m.charge).rate'),0);
+  assert.equal(run('rank(shop("starbucks"),activeMethods(),"2027-01-12")[0].rate'),10.5+STAR);
+  assert.equal(run('rank(shop("starbucks"),activeMethods(),"2027-01-13").find(r=>r.m.charge).rate'),STAR);
+  assert.equal(run('amountLabel(rank(shop("starbucks"),activeMethods(),"2027-01-12")[0],1000)'),"約105pt＋Star 16個");
   run('dateJST=()=>"2026-11-23"');
-  const expected=20000*0.105+3871*0.105+(120000-23871)*0.01;
+  const expected=23871*0.105+120000*STAR/100;
   assert.ok(Math.abs(run('simulate(activeMethods(),[shop("starbucks")]).total')-expected)<0.001);
 });
