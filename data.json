@@ -406,7 +406,9 @@
           "joshin",
           "kohnan",
           "muji",
-          "uniqlo"
+          "uniqlo",
+          "fukutaro",
+          "tomods"
         ],
         "no": [
           "amazon",
@@ -449,7 +451,8 @@
           "matsukiyo",
           "tsuruha",
           "bic",
-          "mcd"
+          "mcd",
+          "fukutaro"
         ],
         "no": [
           "amazon",
@@ -494,7 +497,8 @@
           "welcia",
           "tsuruha",
           "mcd",
-          "yoshinoya"
+          "yoshinoya",
+          "fukutaro"
         ],
         "no": [
           "amazon",
@@ -533,7 +537,8 @@
           "mcd",
           "tsuruha",
           "kfc",
-          "yoshinoya"
+          "yoshinoya",
+          "fukutaro"
         ],
         "no": [
           "amazon",
@@ -967,6 +972,45 @@
       "official_domains": [
         "welcia.co.jp",
         "welcia-yakkyoku.co.jp"
+      ]
+    },
+    {
+      "id": "tomods",
+      "name": "トモズ",
+      "cat": "ドラッグストア",
+      "alias": [
+        "Tomod's",
+        "tomods",
+        "ともず",
+        "アメリカンファーマシー"
+      ],
+      "pc": [
+        "d",
+        "ponta"
+      ],
+      "note": "トモズ独自のSTポイント（税抜100円で1ポイント）は、現金・クレカ・電子マネーなどどの払い方でも同じように貯まるので、この比較には入れていません。dポイントカードかPontaカードのどちらか1枚も一緒に出せます（税抜200円で1ポイント）。STポイント10倍デーなどのキャンペーンもあります。",
+      "src": "https://www.tomods.jp/faq",
+      "official_domains": [
+        "tomods.jp"
+      ]
+    },
+    {
+      "id": "fukutaro",
+      "name": "くすりの福太郎",
+      "cat": "ドラッグストア",
+      "alias": [
+        "福太郎",
+        "ふくたろう",
+        "くすりのふくたろう"
+      ],
+      "pc": [
+        "rakuten"
+      ],
+      "note": "くすりの福太郎ポイント（ツルハグループポイント。税抜100円で1ポイント）はどの払い方でも同じように貯まるので、この比較には入れていません。楽天ポイントカードと2枚同時に出すと、両方のポイントが貯まります。クレカ・電子マネー・QR決済は現金との併用のみで、キャッシュレス同士の併用はできません。",
+      "src": "https://www.kusurinofukutaro.co.jp/service/payment/",
+      "official_domains": [
+        "kusurinofukutaro.co.jp",
+        "tsuruha-hd.com"
       ]
     },
     {
@@ -2176,6 +2220,12 @@
       "rate": 1,
       "label": "一部店舗のみ",
       "note": "松屋の券売機でクレジットカードが使えるのは一部店舗のみ（モバイルオーダーなら利用可）。"
+    },
+    {
+      "method": "rakuten_pay",
+      "store": "fukutaro",
+      "rate": 1.5,
+      "label": "ダブルで貯まる対象店"
     }
   ],
   "not_available": {
@@ -2260,6 +2310,12 @@
       "aeon_pay"
     ],
     "jonathan": [
+      "aeon_pay"
+    ],
+    "fukutaro": [
+      "aeon_pay"
+    ],
+    "tomods": [
       "aeon_pay"
     ]
   },
