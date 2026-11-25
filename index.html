@@ -264,7 +264,7 @@ function loadData(d){
 }
 
 // 画面（index.html）を更新したら、この番号を変える。開いている画面より新しい版が公開されていたら「更新する」を出す
-const APP_VERSION = "2026-11-25.2";
+const APP_VERSION = "2026-11-25.3";
 const KEY = "otoku-pay-v1", DEFAULT_SPEND = 3000;
 const blankState = () => ({methods:[], overrides:{}, pcs:[], favs:[], spend:{}, app:{}, charge:{}, usual:{}, pointPrio:[], scenario:{}, ai:{}});
 let state = blankState();
@@ -591,6 +591,13 @@ function rank(store, wallet=activeMethods(), date=dateJST(), typical=false){
         rate = rule.rate;
       }
       else if (!rule.benefit) parts.push({t:rule.label, cls:"boost"});
+      // 曜日・日付で上乗せされる特典（楽天市場の火・木曜、5と0のつく日など）。見直しの試算では入れない
+      if (special === undefined && !rule.override && rule.date_bonus && !typical){
+        const dt = new Date(date+"T00:00:00Z"), wd = dt.getUTCDay(), md = dt.getUTCDate();
+        for (const b of rule.date_bonus){
+          if (b.weekdays?.includes(wd) || b.monthdays?.includes(md)){ rate += b.rate; parts.push({t:`${b.label} +${fmt(b.rate)}%`, cls:"boost"}); }
+        }
+      }
       if (rule.note) notes.push(rule.note);
     }
     const ch = m.charge ? chargeSource(m,wallet,date) : null;

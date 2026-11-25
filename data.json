@@ -105,6 +105,20 @@
       "annual_fee_yen": 2200
     },
     {
+      "id": "rakuten_premium",
+      "name": "楽天プレミアムカード",
+      "kind": "クレカ",
+      "group": "クレジットカード",
+      "base": 1,
+      "point": "楽天ポイント",
+      "note": "ふだんの還元は楽天カードと同じ1%。楽天市場では、毎週火・木曜に+1%（楽天市場特典。楽天e-NAVIでの登録が必要、月10,000ポイントまで）、誕生月に+1%（月10,000ポイントまで）。プライオリティ・パス（海外空港ラウンジ年5回まで無料）などが付きます。年会費11,000円（税込）。",
+      "src": "https://www.rakuten-card.co.jp/card/rakuten-premium-card/",
+      "official_domains": [
+        "rakuten-card.co.jp"
+      ],
+      "annual_fee_yen": 11000
+    },
+    {
       "id": "jcb_w",
       "name": "JCB CARD W",
       "kind": "クレカ",
@@ -352,9 +366,10 @@
         "jcb_w": 0,
         "dcard": 0,
         "rakuten_card": 0.5,
-        "rakuten_gold": 0.5
+        "rakuten_gold": 0.5,
+        "rakuten_premium": 0.5
       },
-      "charge_note": "三井住友カード（NL・ゴールドNL・Olive）・JCB・dカードは、モバイルSuica・Apple PayのSuicaへのチャージはポイント対象外（三井住友カードはGoogle Payからのチャージなら対象）。楽天カード（ゴールド含む）は、楽天ペイアプリからモバイルSuicaにチャージすると0.5%。そのほかのカードは付与率を確認できていません。",
+      "charge_note": "三井住友カード（NL・ゴールドNL・Olive）・JCB・dカードは、モバイルSuica・Apple PayのSuicaへのチャージはポイント対象外（三井住友カードはGoogle Payからのチャージなら対象）。楽天カード（ゴールド・プレミアム含む）は、楽天ペイアプリからモバイルSuicaにチャージすると0.5%。そのほかのカードは付与率を確認できていません。",
       "note": "Suicaで払っても、JRE POINTが貯まるのは駅ビルなどのJRE POINT加盟店だけです。コンビニなどでは、チャージに使ったカードのポイントだけになります。PASMOなどほかの交通系ICも、ほぼ同じ考え方です。",
       "src": "https://www.jreast.co.jp/suica/shopping/",
       "official_domains": [
@@ -413,9 +428,10 @@
         "jcb_w": 0,
         "dcard": 0,
         "paypay_card": 0,
-        "rakuten_gold": 0.5
+        "rakuten_gold": 0.5,
+        "rakuten_premium": 0.5
       },
-      "charge_note": "楽天カード（ゴールド含む）から楽天Edyにチャージすると200円につき1ポイント（0.5%）。JCB・dカード・PayPayカードはEdyへのチャージはポイント対象外。そのほかのカードは付与率を確認できていません。",
+      "charge_note": "楽天カード（ゴールド・プレミアム含む）から楽天Edyにチャージすると200円につき1ポイント（0.5%）。JCB・dカード・PayPayカードはEdyへのチャージはポイント対象外。そのほかのカードは付与率を確認できていません。",
       "note": "楽天Edyで払うと200円（税込）につき1ポイント（0.5%）。事前に楽天ポイントを貯める設定が必要です。",
       "src": "https://edy.rakuten.co.jp/",
       "official_domains": [
@@ -846,6 +862,7 @@
             "olive",
             "rakuten_card",
             "rakuten_gold",
+            "rakuten_premium",
             "jcb_w",
             "dcard",
             "paypay_card",
@@ -1465,10 +1482,24 @@
       "store": "rakuten_ichiba",
       "rate": 3.0,
       "label": "SPU",
-      "note": "楽天市場のSPU（スーパーポイントアッププログラム）。楽天カード払いで最低3%（通常1%＋楽天カード2%）。楽天モバイルなどほかの楽天サービスの条件を満たすほど上がり、すべて達成すると最大18.5%。サービスごとに月の獲得上限があり、一部は期間限定ポイントです。",
+      "note": "楽天市場のSPU（スーパーポイントアッププログラム）。楽天カード払いで最低3%（通常1%＋楽天カード2%）。楽天モバイルなどほかの楽天サービスの条件を満たすほど上がり、すべて達成すると最大18.5%。サービスごとに月の獲得上限があり、一部は期間限定ポイントです。5と0のつく日は、エントリーして楽天カードで払うと+1%（月1,000ポイントまで）。",
       "rate_max": 18.5,
       "max_label": "SPU全達成で",
-      "src": "https://event.rakuten.co.jp/campaign/point-up/everyday/point/"
+      "src": "https://event.rakuten.co.jp/campaign/point-up/everyday/point/",
+      "date_bonus": [
+        {
+          "monthdays": [
+            5,
+            10,
+            15,
+            20,
+            25,
+            30
+          ],
+          "rate": 1,
+          "label": "5と0のつく日（要エントリー）"
+        }
+      ]
     },
     {
       "method": "paypay_card",
@@ -2081,13 +2112,66 @@
       "store": "rakuten_ichiba",
       "rate": 3.0,
       "label": "SPU",
-      "note": "楽天市場のSPU（スーパーポイントアッププログラム）。楽天ゴールドカード払いで最低3%（楽天カードと同じ）（通常1%＋楽天カード2%）。楽天モバイルなどほかの楽天サービスの条件を満たすほど上がり、すべて達成すると最大18.5%。サービスごとに月の獲得上限があり、一部は期間限定ポイントです。誕生月はさらに+1%（月2,000ポイントまで）。",
+      "note": "楽天市場のSPU（スーパーポイントアッププログラム）。楽天ゴールドカード払いで最低3%（通常1%＋楽天カード2%。楽天カードと同じ）。楽天モバイルなどほかの楽天サービスの条件を満たすほど上がり、すべて達成すると最大18.5%。サービスごとに月の獲得上限があり、一部は期間限定ポイントです。誕生月はさらに+1%（月2,000ポイントまで）。5と0のつく日は、エントリーして楽天カードで払うと+1%（月1,000ポイントまで）。",
       "rate_max": 18.5,
       "max_label": "SPU全達成で",
-      "src": "https://event.rakuten.co.jp/campaign/point-up/everyday/point/"
+      "src": "https://event.rakuten.co.jp/campaign/point-up/everyday/point/",
+      "date_bonus": [
+        {
+          "monthdays": [
+            5,
+            10,
+            15,
+            20,
+            25,
+            30
+          ],
+          "rate": 1,
+          "label": "5と0のつく日（要エントリー）"
+        }
+      ]
     },
     {
       "method": "rakuten_gold",
+      "store": "matsuya",
+      "rate": 1,
+      "label": "一部店舗のみ",
+      "note": "松屋の券売機でクレジットカードが使えるのは一部店舗のみ（モバイルオーダーなら利用可）。"
+    },
+    {
+      "method": "rakuten_premium",
+      "store": "rakuten_ichiba",
+      "rate": 3.0,
+      "label": "SPU",
+      "note": "楽天市場のSPU（スーパーポイントアッププログラム）。楽天プレミアムカード払いで最低3%（通常1%＋楽天カード2%。楽天カードと同じ）。楽天モバイルなどほかの楽天サービスの条件を満たすほど上がり、すべて達成すると最大18.5%。サービスごとに月の獲得上限があり、一部は期間限定ポイントです。さらに毎週火・木曜は+1%（楽天市場特典。要登録・月10,000ポイントまで）、誕生月は+1%（月10,000ポイントまで）。5と0のつく日は、エントリーして楽天カードで払うと+1%（月1,000ポイントまで）。",
+      "rate_max": 18.5,
+      "max_label": "SPU全達成で",
+      "src": "https://event.rakuten.co.jp/campaign/point-up/everyday/point/",
+      "date_bonus": [
+        {
+          "weekdays": [
+            2,
+            4
+          ],
+          "rate": 1,
+          "label": "火・木曜の楽天市場特典"
+        },
+        {
+          "monthdays": [
+            5,
+            10,
+            15,
+            20,
+            25,
+            30
+          ],
+          "rate": 1,
+          "label": "5と0のつく日（要エントリー）"
+        }
+      ]
+    },
+    {
+      "method": "rakuten_premium",
       "store": "matsuya",
       "rate": 1,
       "label": "一部店舗のみ",

@@ -91,3 +91,14 @@ test("dated online charge is used only until the documented end date",()=>{
   const expected=23871*0.105+120000*STAR/100;
   assert.ok(Math.abs(run('simulate(activeMethods(),[shop("starbucks")]).total')-expected)<0.001);
 });
+
+test("Rakuten Ichiba adds weekday and 5/0-day bonuses only on those dates and not in the review",()=>{
+  const run=app({methods:["rakuten_card","rakuten_premium"]});
+  const r=(id,d)=>run(`rank(shop("rakuten_ichiba"),activeMethods(),"${d}").find(x=>x.m.id==="${id}").rate`);
+  assert.equal(r("rakuten_premium","2026-11-23"),3);   // 月曜
+  assert.equal(r("rakuten_premium","2026-11-26"),4);   // 木曜
+  assert.equal(r("rakuten_card","2026-11-26"),3);
+  assert.equal(r("rakuten_card","2026-11-30"),4);      // 30日
+  assert.equal(r("rakuten_premium","2026-12-10"),5);   // 木曜かつ10日
+  assert.equal(run('rank(shop("rakuten_ichiba"),activeMethods(),"2026-12-10",true).find(x=>x.m.id==="rakuten_premium").rate'),3);
+});
