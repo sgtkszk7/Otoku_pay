@@ -91,6 +91,20 @@
       "annual_fee_yen": 0
     },
     {
+      "id": "rakuten_gold",
+      "name": "楽天ゴールドカード",
+      "kind": "クレカ",
+      "group": "クレジットカード",
+      "base": 1,
+      "point": "楽天ポイント",
+      "note": "還元は基本的に楽天カードと同じです（100円につき1ポイント）。違いは、誕生月に楽天市場・楽天ブックスで+1%（月2,000ポイントまで）、国内空港ラウンジ年2回無料、ETCカード年会費無料など。年会費2,200円（税込）。",
+      "src": "https://www.rakuten-card.co.jp/card/rakuten-gold-card/",
+      "official_domains": [
+        "rakuten-card.co.jp"
+      ],
+      "annual_fee_yen": 2200
+    },
+    {
       "id": "jcb_w",
       "name": "JCB CARD W",
       "kind": "クレカ",
@@ -337,9 +351,10 @@
         "olive": 0,
         "jcb_w": 0,
         "dcard": 0,
-        "rakuten_card": 0.5
+        "rakuten_card": 0.5,
+        "rakuten_gold": 0.5
       },
-      "charge_note": "三井住友カード（NL・ゴールドNL・Olive）・JCB・dカードは、モバイルSuica・Apple PayのSuicaへのチャージはポイント対象外（三井住友カードはGoogle Payからのチャージなら対象）。楽天カードは、楽天ペイアプリからモバイルSuicaにチャージすると0.5%。そのほかのカードは付与率を確認できていません。",
+      "charge_note": "三井住友カード（NL・ゴールドNL・Olive）・JCB・dカードは、モバイルSuica・Apple PayのSuicaへのチャージはポイント対象外（三井住友カードはGoogle Payからのチャージなら対象）。楽天カード（ゴールド含む）は、楽天ペイアプリからモバイルSuicaにチャージすると0.5%。そのほかのカードは付与率を確認できていません。",
       "note": "Suicaで払っても、JRE POINTが貯まるのは駅ビルなどのJRE POINT加盟店だけです。コンビニなどでは、チャージに使ったカードのポイントだけになります。PASMOなどほかの交通系ICも、ほぼ同じ考え方です。",
       "src": "https://www.jreast.co.jp/suica/shopping/",
       "official_domains": [
@@ -397,9 +412,10 @@
         "rakuten_card": 0.5,
         "jcb_w": 0,
         "dcard": 0,
-        "paypay_card": 0
+        "paypay_card": 0,
+        "rakuten_gold": 0.5
       },
-      "charge_note": "楽天カードから楽天Edyにチャージすると200円につき1ポイント（0.5%）。JCB・dカード・PayPayカードはEdyへのチャージはポイント対象外。そのほかのカードは付与率を確認できていません。",
+      "charge_note": "楽天カード（ゴールド含む）から楽天Edyにチャージすると200円につき1ポイント（0.5%）。JCB・dカード・PayPayカードはEdyへのチャージはポイント対象外。そのほかのカードは付与率を確認できていません。",
       "note": "楽天Edyで払うと200円（税込）につき1ポイント（0.5%）。事前に楽天ポイントを貯める設定が必要です。",
       "src": "https://edy.rakuten.co.jp/",
       "official_domains": [
@@ -829,6 +845,7 @@
             "smbc_gold_nl",
             "olive",
             "rakuten_card",
+            "rakuten_gold",
             "jcb_w",
             "dcard",
             "paypay_card",
@@ -2058,6 +2075,23 @@
       "label": "WAON会員登録で2倍",
       "note": "WAON会員登録（所有者情報登録）をしたWAONなら200円につき2ポイント。未登録は1ポイント。",
       "src": "https://www.waon.net/campaign/20190601_2baipointcp/"
+    },
+    {
+      "method": "rakuten_gold",
+      "store": "rakuten_ichiba",
+      "rate": 3.0,
+      "label": "SPU",
+      "note": "楽天市場のSPU（スーパーポイントアッププログラム）。楽天ゴールドカード払いで最低3%（楽天カードと同じ）（通常1%＋楽天カード2%）。楽天モバイルなどほかの楽天サービスの条件を満たすほど上がり、すべて達成すると最大18.5%。サービスごとに月の獲得上限があり、一部は期間限定ポイントです。誕生月はさらに+1%（月2,000ポイントまで）。",
+      "rate_max": 18.5,
+      "max_label": "SPU全達成で",
+      "src": "https://event.rakuten.co.jp/campaign/point-up/everyday/point/"
+    },
+    {
+      "method": "rakuten_gold",
+      "store": "matsuya",
+      "rate": 1,
+      "label": "一部店舗のみ",
+      "note": "松屋の券売機でクレジットカードが使えるのは一部店舗のみ（モバイルオーダーなら利用可）。"
     }
   ],
   "not_available": {

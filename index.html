@@ -234,7 +234,7 @@
 
   <footer>
     <span id="checked"></span><br>還元率は公式サイト等を確認した目安です。対象店舗・条件・上限・キャンペーンは頻繁に変わるため、実際の還元は各社の公式情報でご確認ください。<br>
-    プロトタイプ版（主要チェーン34店・決済20種のサンプルデータ）
+    <span id="scope">プロトタイプ版（主要チェーンと主な支払い方法のサンプルデータ）</span>
   </footer>
 </div>
 
@@ -264,7 +264,7 @@ function loadData(d){
 }
 
 // 画面（index.html）を更新したら、この番号を変える。開いている画面より新しい版が公開されていたら「更新する」を出す
-const APP_VERSION = "2026-11-25.1";
+const APP_VERSION = "2026-11-25.2";
 const KEY = "otoku-pay-v1", DEFAULT_SPEND = 3000;
 const blankState = () => ({methods:[], overrides:{}, pcs:[], favs:[], spend:{}, app:{}, charge:{}, usual:{}, pointPrio:[], scenario:{}, ai:{}});
 let state = blankState();
@@ -1199,7 +1199,8 @@ checkUpdate();
 // ホーム画面のアプリは閉じずに残ることが多いので、画面に戻ってきたときにも確かめる
 document.addEventListener("visibilitychange", ()=>{ if (document.visibilityState === "visible") checkUpdate(); });
 function renderFavPicker(){ $("#favpick").innerHTML = storePickHtml("ジャンルから選んで追加"); }
-function renderChecked(d){ const el=$("#checked"); if(el && d.updated) el.textContent = `データ最終更新：${d.updated}`; }
+function renderChecked(d){ const el=$("#checked"); if(el && d.updated) el.textContent = `データ最終更新：${d.updated}`;
+  const sc=$("#scope"); if(sc && d.stores && d.methods) sc.textContent = `プロトタイプ版（主要チェーン${d.stores.length}店・決済${d.methods.length}種のサンプルデータ）`; }
 </script>
 </body>
 </html>
